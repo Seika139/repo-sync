@@ -1,0 +1,19 @@
+[tools]
+uv = "0.11.6"
+python = "3.14.4"
+
+[tasks.sync]
+description = "依存を同期"
+run = "uv sync"
+
+[tasks.test]
+description = "pytest を実行"
+run = "uv run pytest -v"
+
+[tasks.lint]
+description = "ruff check と format check"
+run = ["uv run ruff check .", "uv run ruff format --check ."]
+
+[tasks.run]
+description = "repo-sync を実行"
+run = "uv run repo-sync"

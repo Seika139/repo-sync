@@ -1,0 +1,27 @@
+# repo-sync configuration
+# Copy this file to ~/.config/repo-sync/config.yaml and edit as needed.
+
+# Discord webhook URL for conflict notifications.
+# Create one at: Discord Server Settings > Integrations > Webhooks
+discord_webhook_url: "https://discord.com/api/webhooks/YOUR_ID/YOUR_TOKEN"
+
+# Bot display name in Discord messages (optional)
+bot_username: "repo-sync"
+
+repos:
+  # Push only: auto-commit and push local changes to remote
+  - path: ~/dotfiles
+    direction: push
+    branch: main
+    # remote: origin       # default: origin
+    # auto_commit: true    # default: true
+
+  # Pull only: fetch and fast-forward from remote
+  - path: ~/work/shared-config
+    direction: pull
+    branch: main
+
+  # Bidirectional: pull if behind, push if ahead, rebase if diverged
+  - path: ~/notes
+    direction: both
+    branch: main
