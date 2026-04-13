@@ -9,10 +9,13 @@
 
 ## Tagged Releases
 
-- [unreleased](https://github.com/Seika139/repo-sync/compare/v0.1.0...HEAD)
+- [unreleased](https://github.com/Seika139/repo-sync/compare/v0.1.1...HEAD)
+- [0.1.1](https://github.com/Seika139/repo-sync/compare/v0.1.0...v0.1.1)
 - [0.1.0](https://github.com/Seika139/repo-sync/releases/tag/v0.1.0)
 
 ## [Unreleased]
+
+## [0.1.1] - 2026-04-14
 
 ### Added
 
