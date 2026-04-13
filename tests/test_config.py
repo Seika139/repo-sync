@@ -34,7 +34,7 @@ def config_file(tmp_path: Path) -> Path:
     return config
 
 
-def test_load_config(config_file: Path):
+def test_load_config(config_file: Path) -> None:
     config = load_config(config_file)
     assert isinstance(config, Config)
     assert config.discord_webhook_url == "https://discord.com/api/webhooks/test/test"
@@ -42,7 +42,7 @@ def test_load_config(config_file: Path):
     assert len(config.repos) == 2
 
 
-def test_load_config_repo_fields(config_file: Path):
+def test_load_config_repo_fields(config_file: Path) -> None:
     config = load_config(config_file)
     repo = config.repos[0]
     assert repo.direction == Direction.PUSH
@@ -57,7 +57,7 @@ def test_load_config_repo_fields(config_file: Path):
     assert repo2.auto_commit is False
 
 
-def test_load_config_invalid_path(tmp_path: Path):
+def test_load_config_invalid_path(tmp_path: Path) -> None:
     config = tmp_path / "config.yaml"
     config.write_text(
         textwrap.dedent("""\
@@ -71,7 +71,7 @@ def test_load_config_invalid_path(tmp_path: Path):
         load_config(config)
 
 
-def test_load_config_not_git_repo(tmp_path: Path):
+def test_load_config_not_git_repo(tmp_path: Path) -> None:
     repo = tmp_path / "not-a-repo"
     repo.mkdir()
     config = tmp_path / "config.yaml"

@@ -46,12 +46,12 @@ def _make_repo_config(path: Path, direction: Direction) -> RepoConfig:
 
 
 class TestSyncPull:
-    def test_up_to_date(self, git_pair: tuple[Path, Path]):
+    def test_up_to_date(self, git_pair: tuple[Path, Path]) -> None:
         local, _ = git_pair
         repo = _make_repo_config(local, Direction.PULL)
         assert sync_repo(repo, webhook=None) == SyncResult.UP_TO_DATE
 
-    def test_behind_pulls(self, git_pair: tuple[Path, Path]):
+    def test_behind_pulls(self, git_pair: tuple[Path, Path]) -> None:
         local, bare = git_pair
         other = _make_other_clone(bare)
         (other / "new.txt").write_text("data")
@@ -63,7 +63,7 @@ class TestSyncPull:
         assert sync_repo(repo, webhook=None) == SyncResult.PULLED
         assert (local / "new.txt").exists()
 
-    def test_ahead_reports_conflict(self, git_pair: tuple[Path, Path]):
+    def test_ahead_reports_conflict(self, git_pair: tuple[Path, Path]) -> None:
         local, _ = git_pair
         (local / "local.txt").write_text("data")
         _run_git("add", ".", cwd=local)
@@ -74,19 +74,19 @@ class TestSyncPull:
 
 
 class TestSyncPush:
-    def test_up_to_date(self, git_pair: tuple[Path, Path]):
+    def test_up_to_date(self, git_pair: tuple[Path, Path]) -> None:
         local, _ = git_pair
         repo = _make_repo_config(local, Direction.PUSH)
         assert sync_repo(repo, webhook=None) == SyncResult.UP_TO_DATE
 
-    def test_uncommitted_changes_auto_commit_and_push(self, git_pair: tuple[Path, Path]):
+    def test_uncommitted_changes_auto_commit_and_push(self, git_pair: tuple[Path, Path]) -> None:
         local, _ = git_pair
         (local / "new.txt").write_text("data")
 
         repo = _make_repo_config(local, Direction.PUSH)
         assert sync_repo(repo, webhook=None) == SyncResult.PUSHED
 
-    def test_ahead_pushes(self, git_pair: tuple[Path, Path]):
+    def test_ahead_pushes(self, git_pair: tuple[Path, Path]) -> None:
         local, _ = git_pair
         (local / "new.txt").write_text("data")
         _run_git("add", ".", cwd=local)
@@ -97,7 +97,7 @@ class TestSyncPush:
 
 
 class TestSyncBoth:
-    def test_behind_pulls(self, git_pair: tuple[Path, Path]):
+    def test_behind_pulls(self, git_pair: tuple[Path, Path]) -> None:
         local, bare = git_pair
         other = _make_other_clone(bare)
         (other / "new.txt").write_text("data")
@@ -108,7 +108,7 @@ class TestSyncBoth:
         repo = _make_repo_config(local, Direction.BOTH)
         assert sync_repo(repo, webhook=None) == SyncResult.PULLED
 
-    def test_ahead_pushes(self, git_pair: tuple[Path, Path]):
+    def test_ahead_pushes(self, git_pair: tuple[Path, Path]) -> None:
         local, _ = git_pair
         (local / "new.txt").write_text("data")
         _run_git("add", ".", cwd=local)
@@ -117,7 +117,7 @@ class TestSyncBoth:
         repo = _make_repo_config(local, Direction.BOTH)
         assert sync_repo(repo, webhook=None) == SyncResult.PUSHED
 
-    def test_diverged_rebase_success(self, git_pair: tuple[Path, Path]):
+    def test_diverged_rebase_success(self, git_pair: tuple[Path, Path]) -> None:
         local, bare = git_pair
         # Remote gets a new commit
         other = _make_other_clone(bare)
@@ -134,7 +134,7 @@ class TestSyncBoth:
         repo = _make_repo_config(local, Direction.BOTH)
         assert sync_repo(repo, webhook=None) == SyncResult.REBASED_AND_PUSHED
 
-    def test_diverged_rebase_conflict(self, git_pair: tuple[Path, Path]):
+    def test_diverged_rebase_conflict(self, git_pair: tuple[Path, Path]) -> None:
         local, bare = git_pair
         # Remote modifies README
         other = _make_other_clone(bare)
@@ -153,7 +153,7 @@ class TestSyncBoth:
 
 
 class TestDryRun:
-    def test_dry_run_does_not_push(self, git_pair: tuple[Path, Path]):
+    def test_dry_run_does_not_push(self, git_pair: tuple[Path, Path]) -> None:
         local, bare = git_pair
         (local / "new.txt").write_text("data")
         _run_git("add", ".", cwd=local)
