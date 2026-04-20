@@ -5,10 +5,10 @@
 # =============================================================================
 set -euo pipefail
 
-DEPLOY_USER="ebi"
+DEPLOY_USER="${DEPLOY_USER:-ebi}"
 DEPLOY_HOME="/home/$DEPLOY_USER"
-DEPLOY_DIR="$DEPLOY_HOME/programs/tools/repo-sync"
-LOG_DIR="/var/log/repo-sync"
+DEPLOY_DIR="${DEPLOY_DIR:-$DEPLOY_HOME/programs/tools/repo-sync}"
+LOG_DIR="${LOG_DIR:-/var/log/repo-sync}"
 
 # ---------------------------------------------------------------------------
 # Pre-flight checks
