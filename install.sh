@@ -66,8 +66,8 @@ chown "$DEPLOY_USER:$DEPLOY_USER" "$LOG_DIR"
 # 4. Set up logrotate
 # ---------------------------------------------------------------------------
 echo "[4/5] Configuring logrotate..."
-cat >/etc/logrotate.d/repo-sync <<'LOGROTATE'
-/var/log/repo-sync/*.log {
+cat >/etc/logrotate.d/repo-sync <<LOGROTATE
+${LOG_DIR}/*.log {
     weekly
     rotate 4
     compress
