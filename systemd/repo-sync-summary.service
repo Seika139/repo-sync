@@ -1,0 +1,15 @@
+[Unit]
+Description=Send weekly repo-sync summary to Discord
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=__DEPLOY_USER__
+WorkingDirectory=__DEPLOY_DIR__
+ExecStart=__DEPLOY_HOME__/.local/bin/mise exec -- uv run python -m repo_sync.weekly_summary
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true

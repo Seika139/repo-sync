@@ -1,0 +1,8 @@
+[Unit]
+Description=Notify Discord when repo-sync fails
+
+[Service]
+Type=oneshot
+User=__DEPLOY_USER__
+ExecStart=__DEPLOY_DIR__/scripts/notify-failure.sh
+Environment=REPO_SYNC_CONFIG=__DEPLOY_HOME__/.config/repo-sync/config.yaml

@@ -24,7 +24,7 @@ def git_pair(tmp_path: Path) -> tuple[Path, Path]:
     """Create a bare 'remote' repo and a cloned 'local' repo."""
     bare = tmp_path / "remote.git"
     bare.mkdir()
-    _run_git("init", "--bare", cwd=bare)
+    _run_git("init", "--bare", "--initial-branch=main", cwd=bare)
 
     local = tmp_path / "local"
     _run_git("clone", str(bare), str(local), cwd=tmp_path)

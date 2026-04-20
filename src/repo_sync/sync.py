@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import urllib.request
 from datetime import datetime
 from enum import Enum
 
@@ -208,6 +209,15 @@ def _sync_both(
     return SyncResult.CONFLICT
 
 
+def _ping_heartbeat(url: str) -> None:
+    """Send a GET request to the heartbeat URL (best-effort, no exception on failure)."""
+    try:
+        urllib.request.urlopen(url, timeout=10)  # noqa: S310
+        logger.info("Heartbeat pinged: %s", url)
+    except Exception:
+        logger.warning("Heartbeat ping failed: %s", url)
+
+
 def run_sync(config: Config, *, dry_run: bool = False) -> list[tuple[RepoConfig, SyncResult]]:
     """Synchronize all configured repositories."""
     webhook: DiscordWebhook | None = None
@@ -221,4 +231,9 @@ def run_sync(config: Config, *, dry_run: bool = False) -> list[tuple[RepoConfig,
         logger.info("Result for %s: %s", repo.path, result.value)
 
     _notify_summary(webhook, results)
+
+    has_failures = any(r in (SyncResult.CONFLICT, SyncResult.ERROR) for _, r in results)
+    if config.heartbeat_url and not has_failures and not dry_run:
+        _ping_heartbeat(config.heartbeat_url)
+
     return results

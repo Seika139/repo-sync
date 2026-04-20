@@ -29,6 +29,7 @@ class Config:
     discord_webhook_url: str
     repos: list[RepoConfig]
     bot_username: str = "repo-sync"
+    heartbeat_url: str = ""
 
 
 def load_config(path: Path) -> Config:
@@ -41,6 +42,7 @@ def load_config(path: Path) -> Config:
 
     webhook_url = raw.get("discord_webhook_url", "")
     bot_username = raw.get("bot_username", "repo-sync")
+    heartbeat_url = raw.get("heartbeat_url", "")
     repos: list[RepoConfig] = []
 
     for entry in raw.get("repos", []):
@@ -65,4 +67,9 @@ def load_config(path: Path) -> Config:
             )
         )
 
-    return Config(discord_webhook_url=webhook_url, repos=repos, bot_username=bot_username)
+    return Config(
+        discord_webhook_url=webhook_url,
+        repos=repos,
+        bot_username=bot_username,
+        heartbeat_url=heartbeat_url,
+    )
