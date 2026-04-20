@@ -8,7 +8,7 @@ description = "初期化 (依存のインストールと config.yaml の作成)"
 run = '''
 mise install
 chmod +x install.sh mise/tasks/*.sh
-sudo bash install.sh
+sudo DEPLOY_DIR="$(pwd)" bash install.sh
 '''
 
 [tasks.sync]
