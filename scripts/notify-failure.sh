@@ -9,14 +9,18 @@ if [[ ! -f "$config" ]]; then
 fi
 
 # コメント行を除外してキーを取得
-webhook_url=$(grep -v '^ *#' "$config" | grep -m1 'discord_webhook_url:' | sed 's/.*: *"\?\([^"]*\)"\?/\1/')
+yaml_value() {
+  grep -v '^ *#' "$config" | grep -m1 "$1:" | sed 's/^[^:]*:[[:space:]]*//' | tr -d '"'
+}
+
+webhook_url=$(yaml_value discord_webhook_url)
 
 if [[ -z "$webhook_url" || "$webhook_url" == *"YOUR_"* ]]; then
   echo "No valid webhook URL configured" >&2
   exit 1
 fi
 
-bot_username=$(grep -v '^ *#' "$config" | grep -m1 'bot_username:' | sed 's/.*: *"\?\([^"]*\)"\?/\1/')
+bot_username=$(yaml_value bot_username)
 bot_username="${bot_username:-repo-sync}"
 
 timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
