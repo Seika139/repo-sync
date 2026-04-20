@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash \"$(git rev-parse --show-toplevel)/.codex/hooks/format.sh\"",
+            "timeout": 30,
+            "statusMessage": "Formatting changed files with ruff, shfmt, rumdl"
+          }
+        ]
+      }
+    ]
+  }
+}
