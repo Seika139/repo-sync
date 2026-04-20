@@ -31,11 +31,11 @@ case "$selected" in
     ;;
   journal)
     print_c cyan "journalctl で直近 50 件を表示します"
-    journalctl -u repo-sync.service -n 50 --no-pager
+    sudo journalctl -u repo-sync.service -n 50 --no-pager
     ;;
   timer)
     print_c cyan "次回実行時刻を確認します"
-    systemctl list-timers repo-sync.timer
+    sudo systemctl list-timers repo-sync*
     ;;
   *)
     print_c red "無効なオプションです: $selected (file|journal|timer)"
