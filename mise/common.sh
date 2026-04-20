@@ -12,19 +12,19 @@ print_c() {
 
   local color_code
   case "$color_name" in
-  black) color_code='00;30' ;;
-  red) color_code='00;31' ;;
-  green) color_code='00;32' ;;
-  yellow) color_code='00;33' ;;
-  blue) color_code='00;34' ;;
-  magenta) color_code='00;35' ;;
-  cyan) color_code='00;36' ;;
-  white) color_code='01;37' ;;
-  orange) color_code='38;2;250;180;100' ;;
-  *)
-    printf 'Unknown color: %s\n' "$color_name" >&2
-    return 1
-    ;;
+    black) color_code='00;30' ;;
+    red) color_code='00;31' ;;
+    green) color_code='00;32' ;;
+    yellow) color_code='00;33' ;;
+    blue) color_code='00;34' ;;
+    magenta) color_code='00;35' ;;
+    cyan) color_code='00;36' ;;
+    white) color_code='01;37' ;;
+    orange) color_code='38;2;250;180;100' ;;
+    *)
+      printf 'Unknown color: %s\n' "$color_name" >&2
+      return 1
+      ;;
   esac
 
   if "$no_newline"; then

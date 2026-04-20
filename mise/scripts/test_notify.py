@@ -7,6 +7,7 @@ from pathlib import Path
 
 from discord_notify import DiscordWebhook, Embed
 from discord_notify.webhook import COLOR_SUCCESS
+
 from repo_sync.config import load_config
 
 
@@ -16,9 +17,7 @@ def main(config_path: str) -> None:
         print("ERROR: discord_webhook_url is not configured", file=sys.stderr)
         raise SystemExit(1)
 
-    webhook = DiscordWebhook(
-        url=config.discord_webhook_url, username=config.bot_username
-    )
+    webhook = DiscordWebhook(url=config.discord_webhook_url, username=config.bot_username)
     embed = Embed(
         title="repo-sync test notification",
         description="If you see this, Discord notification is working correctly.",

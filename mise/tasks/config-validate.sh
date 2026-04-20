@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
+
+# shellcheck disable=SC1091
 #MISE description="config.yaml を検証"
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$SCRIPT_DIR/common.sh"
 
 CONFIG_FILE="${1:-${HOME}/.config/repo-sync/config.yaml}"
 
 if [[ ! -f "$CONFIG_FILE" ]]; then
-    echo "ERROR: Config file not found: $CONFIG_FILE" >&2
-    echo "Run 'mise run config-init' to create one." >&2
-    exit 1
+  print_c red "ERROR: Config file not found: $CONFIG_FILE"
+  print_c yellow "Run 'mise run config-init' to create one."
+  exit 1
 fi
 
-echo "Validating: $CONFIG_FILE"
+print_c cyan "Validating: $CONFIG_FILE"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 uv run python "$SCRIPT_DIR/scripts/config_validate.py" "$CONFIG_FILE"

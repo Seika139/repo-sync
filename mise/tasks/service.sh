@@ -1,32 +1,55 @@
 #!/usr/bin/env bash
-#MISE description="systemd timer の操作 (引数: start|stop|status|enable|disable)"
+# shellcheck disable=SC1091
+
+#MISE description="systemd timer の操作 (status|start|stop|enable|disable)"
 set -euo pipefail
 
-declare -A COMMANDS=(
-    ["start:手動で即時実行 (one-shot)"]="sudo systemctl start repo-sync.service"
-    ["stop:timer を停止"]="sudo systemctl stop repo-sync.timer"
-    ["status:timer の状態を表示"]="systemctl list-timers repo-sync.timer && echo '' && systemctl status repo-sync.timer --no-pager || true"
-    ["enable:timer を有効化して開始"]="sudo systemctl enable --now repo-sync.timer"
-    ["disable:timer を停止して無効化"]="sudo systemctl stop repo-sync.timer && sudo systemctl disable repo-sync.timer"
-)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$SCRIPT_DIR/common.sh"
 
-select_action() {
-    if [[ -n "${1:-}" ]]; then
-        echo "$1"
-        return
-    fi
-    printf '%s\n' "${!COMMANDS[@]}" | sort | fzf --prompt="service> " | cut -d: -f1
-}
+selected="${1:-}"
 
-ACTION="$(select_action "${1:-}")"
-[[ -z "$ACTION" ]] && exit 0
+if [[ -z "$selected" ]]; then
+  selected=$(
+    printf "status\nstart\nstop\nenable\ndisable\n" | fzf --height 9 --border --prompt "service> " \
+      --preview '
+        case {} in
+          status) printf "timer の状態を表示します\nsystemctl list-timers repo-sync.timer\n" ;;
+          start) printf "手動で即時実行します (one-shot)\nsudo systemctl start repo-sync.service\n" ;;
+          stop) printf "timer を停止します\nsudo systemctl stop repo-sync.timer\n" ;;
+          enable) printf "timer を有効化して開始します\nsudo systemctl enable --now repo-sync.timer\n" ;;
+          disable) printf "timer を停止して無効化します\nsudo systemctl stop + disable repo-sync.timer\n" ;;
+        esac
+      ' --preview-window=right,50%
+  )
+fi
 
-for key in "${!COMMANDS[@]}"; do
-    if [[ "$key" == "$ACTION:"* ]]; then
-        eval "${COMMANDS[$key]}"
-        exit 0
-    fi
-done
-
-echo "Unknown action: $ACTION (start|stop|status|enable|disable)" >&2
-exit 1
+case "$selected" in
+status)
+  print_c cyan "timer の状態を表示します"
+  systemctl list-timers repo-sync.timer
+  echo ""
+  systemctl status repo-sync.timer --no-pager || true
+  ;;
+start)
+  print_c cyan "手動で即時実行します (one-shot)"
+  sudo systemctl start repo-sync.service
+  ;;
+stop)
+  print_c cyan "timer を停止します"
+  sudo systemctl stop repo-sync.timer
+  ;;
+enable)
+  print_c cyan "timer を有効化して開始します"
+  sudo systemctl enable --now repo-sync.timer
+  ;;
+disable)
+  print_c cyan "timer を停止して無効化します"
+  sudo systemctl stop repo-sync.timer
+  sudo systemctl disable repo-sync.timer
+  ;;
+*)
+  print_c red "無効なオプションです: $selected (status|start|stop|enable|disable)"
+  exit 1
+  ;;
+esac

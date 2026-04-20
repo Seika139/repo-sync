@@ -14,18 +14,18 @@ LOG_DIR="/var/log/repo-sync"
 # Pre-flight checks
 # ---------------------------------------------------------------------------
 if [[ "$(uname -s)" != "Linux" ]]; then
-    echo "ERROR: This script is intended for Linux (Ubuntu) only" >&2
-    exit 1
+  echo "ERROR: This script is intended for Linux (Ubuntu) only" >&2
+  exit 1
 fi
 
 if [[ $EUID -ne 0 ]]; then
-    echo "ERROR: This script must be run as root (sudo bash install.sh)" >&2
-    exit 1
+  echo "ERROR: This script must be run as root (sudo bash install.sh)" >&2
+  exit 1
 fi
 
 if ! id "$DEPLOY_USER" &>/dev/null; then
-    echo "ERROR: User '$DEPLOY_USER' does not exist" >&2
-    exit 1
+  echo "ERROR: User '$DEPLOY_USER' does not exist" >&2
+  exit 1
 fi
 
 echo "=== repo-sync installer ==="
@@ -35,15 +35,15 @@ echo "=== repo-sync installer ==="
 # ---------------------------------------------------------------------------
 echo "[1/5] Verifying repo-sync installation..."
 if [[ ! -f "$DEPLOY_DIR/pyproject.toml" ]]; then
-    echo "ERROR: $DEPLOY_DIR/pyproject.toml not found" >&2
-    echo "  Clone the repo first: git clone git@github.com:Seika139/repo-sync.git $DEPLOY_DIR" >&2
-    exit 1
+  echo "ERROR: $DEPLOY_DIR/pyproject.toml not found" >&2
+  echo "  Clone the repo first: git clone git@github.com:Seika139/repo-sync.git $DEPLOY_DIR" >&2
+  exit 1
 fi
 
 if ! command -v "$DEPLOY_HOME/.local/bin/mise" &>/dev/null; then
-    echo "ERROR: mise not found at $DEPLOY_HOME/.local/bin/mise" >&2
-    echo "  Install mise: curl https://mise.run | sh" >&2
-    exit 1
+  echo "ERROR: mise not found at $DEPLOY_HOME/.local/bin/mise" >&2
+  echo "  Install mise: curl https://mise.run | sh" >&2
+  exit 1
 fi
 
 echo "  -> repo-sync found at $DEPLOY_DIR"
@@ -66,7 +66,7 @@ chown "$DEPLOY_USER:$DEPLOY_USER" "$LOG_DIR"
 # 4. Set up logrotate
 # ---------------------------------------------------------------------------
 echo "[4/5] Configuring logrotate..."
-cat > /etc/logrotate.d/repo-sync <<'LOGROTATE'
+cat >/etc/logrotate.d/repo-sync <<'LOGROTATE'
 /var/log/repo-sync/*.log {
     weekly
     rotate 4
@@ -84,7 +84,7 @@ echo "  -> logrotate configured (weekly, 4 rotations)"
 echo "[5/5] Installing systemd timer..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cp "$SCRIPT_DIR/systemd/repo-sync.service" /etc/systemd/system/
-cp "$SCRIPT_DIR/systemd/repo-sync.timer"   /etc/systemd/system/
+cp "$SCRIPT_DIR/systemd/repo-sync.timer" /etc/systemd/system/
 
 systemctl daemon-reload
 systemctl enable --now repo-sync.timer
