@@ -3,6 +3,6 @@ Description=Notify Discord when repo-sync fails
 
 [Service]
 Type=oneshot
-User=ebi
-ExecStart=/home/ebi/programs/tools/repo-sync/scripts/notify-failure.sh
-Environment=REPO_SYNC_CONFIG=/home/ebi/.config/repo-sync/config.yaml
+User=__DEPLOY_USER__
+ExecStart=__DEPLOY_DIR__/scripts/notify-failure.sh
+Environment=REPO_SYNC_CONFIG=__DEPLOY_HOME__/.config/repo-sync/config.yaml

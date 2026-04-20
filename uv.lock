@@ -14,7 +14,7 @@ wheels = [
 [[package]]
 name = "discord-notify"
 version = "0.1.1"
-source = { git = "ssh://git@github.com/Seika139/discord-notify.git?tag=v0.1.1#5edd78a4ae2cf12211ee52abb973460b45ad64ee" }
+source = { git = "https://github.com/Seika139/discord-notify.git?tag=v0.1.1#5edd78a4ae2cf12211ee52abb973460b45ad64ee" }
 
 [[package]]
 name = "iniconfig"
@@ -255,7 +255,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "discord-notify", git = "ssh://git@github.com/Seika139/discord-notify.git?tag=v0.1.1" },
+    { name = "discord-notify", git = "https://github.com/Seika139/discord-notify.git?tag=v0.1.1" },
     { name = "pyyaml", specifier = ">=6.0" },
 ]
 
