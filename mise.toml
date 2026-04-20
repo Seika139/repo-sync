@@ -16,8 +16,8 @@ description = "依存を同期"
 run = "uv sync"
 
 [tasks.test]
-description = "pytest を実行"
-run = "uv run pytest -v"
+description = "pytest + bats を実行"
+run = ["uv run pytest -v", "bats tests/*.bats"]
 
 [tasks.lint]
 description = "ruff check と format check + shellcheck + shfmt"
