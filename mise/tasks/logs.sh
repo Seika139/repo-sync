@@ -35,7 +35,7 @@ case "$selected" in
     ;;
   timer)
     print_c cyan "次回実行時刻を確認します"
-    sudo systemctl list-timers repo-sync*
+    sudo systemctl list-timers repo-sync* --all
     ;;
   *)
     print_c red "無効なオプションです: $selected (file|journal|timer)"
