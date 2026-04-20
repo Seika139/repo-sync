@@ -2,7 +2,7 @@
 Description=Run repo-sync weekly summary every Monday at 12:00
 
 [Timer]
-OnCalendar=Mon *-*-* 12:00:00
+OnCalendar=*-*-* 13:00:00
 Persistent=true
 
 [Install]
