@@ -10,7 +10,7 @@ fi
 
 # コメント行を除外してキーを取得
 yaml_value() {
-  grep -v '^ *#' "$config" | grep -m1 "$1:" | sed 's/^[^:]*:[[:space:]]*//' | tr -d '"'
+  grep -v '^ *#' "$config" | grep -m1 "^ *$1:" | sed 's/^[^:]*:[[:space:]]*//; s/[[:space:]][[:space:]]*#.*$//; s/^"//; s/"$//'
 }
 
 webhook_url=$(yaml_value discord_webhook_url)
