@@ -6,7 +6,7 @@
 set -euo pipefail
 
 DEPLOY_USER="${DEPLOY_USER:-ebi}"
-DEPLOY_HOME="/home/$DEPLOY_USER"
+DEPLOY_HOME="${DEPLOY_HOME:-$(getent passwd "$DEPLOY_USER" | cut -d: -f6)}"
 DEPLOY_DIR="${DEPLOY_DIR:-$DEPLOY_HOME/programs/tools/repo-sync}"
 LOG_DIR="${LOG_DIR:-/var/log/repo-sync}"
 
@@ -52,7 +52,7 @@ echo "  -> repo-sync found at $DEPLOY_DIR"
 # 2. Sync dependencies via mise + uv
 # ---------------------------------------------------------------------------
 echo "[2/5] Syncing dependencies..."
-sudo -u "$DEPLOY_USER" bash -c "cd $DEPLOY_DIR && $DEPLOY_HOME/.local/bin/mise exec -- uv sync --frozen"
+sudo -u "$DEPLOY_USER" bash -c 'cd "$1" && "$2" exec -- uv sync --frozen' _ "$DEPLOY_DIR" "$DEPLOY_HOME/.local/bin/mise"
 echo "  -> dependencies synced"
 
 # ---------------------------------------------------------------------------
@@ -84,15 +84,19 @@ echo "  -> logrotate configured (weekly, 4 rotations)"
 echo "[5/5] Installing systemd units..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+sed_escape() {
+  printf '%s' "$1" | sed -e 's/[&\\/]/\\&/g'
+}
+
 install_unit() {
   local src="$1"
   local dest
   dest="/etc/systemd/system/$(basename "$src")"
   sed \
-    -e "s|__DEPLOY_USER__|$DEPLOY_USER|g" \
-    -e "s|__DEPLOY_HOME__|$DEPLOY_HOME|g" \
-    -e "s|__DEPLOY_DIR__|$DEPLOY_DIR|g" \
-    -e "s|__LOG_DIR__|$LOG_DIR|g" \
+    -e "s|__DEPLOY_USER__|$(sed_escape "$DEPLOY_USER")|g" \
+    -e "s|__DEPLOY_HOME__|$(sed_escape "$DEPLOY_HOME")|g" \
+    -e "s|__DEPLOY_DIR__|$(sed_escape "$DEPLOY_DIR")|g" \
+    -e "s|__LOG_DIR__|$(sed_escape "$LOG_DIR")|g" \
     "$src" >"$dest"
 }
 
