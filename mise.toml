@@ -20,12 +20,13 @@ description = "pytest + bats を実行"
 run = ["uv run pytest -v", "bats tests/*.bats"]
 
 [tasks.lint]
-description = "ruff check と format check + shellcheck + shfmt"
+description = "ruff + shellcheck + shfmt + yamllint"
 run = [
   "uv run ruff check .",
   "uv run ruff format --check .",
   "shellcheck mise/tasks/*.sh mise/common.sh install.sh",
   "shfmt -d -i 2 -ci mise/tasks/*.sh mise/common.sh install.sh",
+  "yamllint .",
 ]
 
 [tasks.format]
