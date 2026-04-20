@@ -81,14 +81,19 @@ echo "  -> logrotate configured (weekly, 4 rotations)"
 # ---------------------------------------------------------------------------
 # 5. Install systemd units
 # ---------------------------------------------------------------------------
-echo "[5/5] Installing systemd timer..."
+echo "[5/5] Installing systemd units..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cp "$SCRIPT_DIR/systemd/repo-sync.service" /etc/systemd/system/
 cp "$SCRIPT_DIR/systemd/repo-sync.timer" /etc/systemd/system/
+cp "$SCRIPT_DIR/systemd/repo-sync-notify-failure.service" /etc/systemd/system/
+cp "$SCRIPT_DIR/systemd/repo-sync-summary.service" /etc/systemd/system/
+cp "$SCRIPT_DIR/systemd/repo-sync-summary.timer" /etc/systemd/system/
 
 systemctl daemon-reload
 systemctl enable --now repo-sync.timer
+systemctl enable --now repo-sync-summary.timer
 echo "  -> repo-sync.timer enabled and started"
+echo "  -> repo-sync-summary.timer enabled (weekly Monday 12:00)"
 
 # ---------------------------------------------------------------------------
 # Verify

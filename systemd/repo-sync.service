@@ -2,6 +2,7 @@
 Description=Sync git repositories via repo-sync
 After=network-online.target
 Wants=network-online.target
+OnFailure=repo-sync-notify-failure.service
 
 [Service]
 Type=oneshot

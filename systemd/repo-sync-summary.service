@@ -1,0 +1,14 @@
+[Unit]
+Description=Send weekly repo-sync summary to Discord
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ebi
+WorkingDirectory=/home/ebi/programs/tools/repo-sync
+ExecStart=/home/ebi/.local/bin/mise exec -- uv run python -m repo_sync.weekly_summary
+Environment=GIT_SSH_COMMAND=ssh -i /home/ebi/.ssh/id_ed25519_github -o IdentitiesOnly=yes
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true

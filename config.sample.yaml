@@ -9,6 +9,10 @@ discord_webhook_url: "https://discord.com/api/webhooks/YOUR_ID/YOUR_TOKEN"
 # Bot display name in Discord messages (optional)
 bot_username: "repo-sync"
 
+# Heartbeat URL — pinged on successful sync (optional)
+# Supports UptimeKuma, healthchecks.io, etc.
+# heartbeat_url: "https://uptime.example.com/api/push/xxxxx"
+
 repos:
   # Push only: auto-commit and push local changes to remote
   - path: ~/dotfiles
