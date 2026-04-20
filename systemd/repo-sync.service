@@ -8,7 +8,7 @@ OnFailure=repo-sync-notify-failure.service
 Type=oneshot
 User=__DEPLOY_USER__
 WorkingDirectory=__DEPLOY_DIR__
-ExecStart=__DEPLOY_HOME__/.local/bin/mise exec -- uv run repo-sync
+ExecStart=__MISE_BIN__ exec -- uv run repo-sync
 
 # SSH 鍵を直接指定（systemd 環境には SSH agent がないため）
 Environment=GIT_SSH_COMMAND=ssh -i __DEPLOY_HOME__/.ssh/id_ed25519_github -o IdentitiesOnly=yes

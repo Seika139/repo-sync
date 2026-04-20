@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=oneshot
 User=__DEPLOY_USER__
 WorkingDirectory=__DEPLOY_DIR__
-ExecStart=__DEPLOY_HOME__/.local/bin/mise exec -- uv run python -m repo_sync.weekly_summary
+ExecStart=__MISE_BIN__ exec -- uv run python -m repo_sync.weekly_summary
 
 # Hardening
 NoNewPrivileges=true
