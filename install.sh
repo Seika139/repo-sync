@@ -40,19 +40,21 @@ if [[ ! -f "$DEPLOY_DIR/pyproject.toml" ]]; then
   exit 1
 fi
 
-if ! command -v "$DEPLOY_HOME/.local/bin/mise" &>/dev/null; then
-  echo "ERROR: mise not found at $DEPLOY_HOME/.local/bin/mise" >&2
+MISE_BIN=$(sudo -u "$DEPLOY_USER" bash -c 'command -v mise' 2>/dev/null || true)
+if [[ -z "$MISE_BIN" ]]; then
+  echo "ERROR: mise not found in $DEPLOY_USER's PATH" >&2
   echo "  Install mise: curl https://mise.run | sh" >&2
   exit 1
 fi
 
 echo "  -> repo-sync found at $DEPLOY_DIR"
+echo "  -> mise found at $MISE_BIN"
 
 # ---------------------------------------------------------------------------
 # 2. Sync dependencies via mise + uv
 # ---------------------------------------------------------------------------
 echo "[2/5] Syncing dependencies..."
-sudo -u "$DEPLOY_USER" bash -c 'cd "$1" && "$2" exec -- uv sync --frozen' _ "$DEPLOY_DIR" "$DEPLOY_HOME/.local/bin/mise"
+sudo -u "$DEPLOY_USER" bash -c 'cd "$1" && "$2" exec -- uv sync --frozen' _ "$DEPLOY_DIR" "$MISE_BIN"
 echo "  -> dependencies synced"
 
 # ---------------------------------------------------------------------------
@@ -97,6 +99,7 @@ install_unit() {
     -e "s|__DEPLOY_HOME__|$(sed_escape "$DEPLOY_HOME")|g" \
     -e "s|__DEPLOY_DIR__|$(sed_escape "$DEPLOY_DIR")|g" \
     -e "s|__LOG_DIR__|$(sed_escape "$LOG_DIR")|g" \
+    -e "s|__MISE_BIN__|$(sed_escape "$MISE_BIN")|g" \
     "$src" >"$dest"
 }
 
