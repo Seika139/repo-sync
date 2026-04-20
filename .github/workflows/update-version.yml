@@ -1,5 +1,5 @@
 ---
-name: Update Version (reusable)
+name: Update Version
 
 permissions:
   contents: write

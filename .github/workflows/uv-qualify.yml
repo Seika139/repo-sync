@@ -1,5 +1,5 @@
 ---
-name: Qualify Code (reusable)
+name: Qualify Code
 
 permissions:
   contents: read
