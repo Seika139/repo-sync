@@ -1,0 +1,22 @@
+[Unit]
+Description=Sync git repositories via repo-sync
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ebi
+WorkingDirectory=/home/ebi/programs/tools/repo-sync
+ExecStart=/home/ebi/.local/bin/mise exec -- uv run repo-sync
+
+# SSH 鍵を直接指定（systemd 環境には SSH agent がないため）
+Environment=GIT_SSH_COMMAND=ssh -i /home/ebi/.ssh/id_ed25519_github -o IdentitiesOnly=yes
+
+# ログをファイルに出力（journalctl にはライフサイクルイベントが残る）
+StandardOutput=append:/var/log/repo-sync/repo-sync.log
+StandardError=append:/var/log/repo-sync/repo-sync.log
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
