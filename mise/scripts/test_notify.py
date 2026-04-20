@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import urllib.error
 from pathlib import Path
 
 from discord_notify import DiscordWebhook, Embed
@@ -23,7 +24,18 @@ def main(config_path: str) -> None:
         description="If you see this, Discord notification is working correctly.",
         color=COLOR_SUCCESS,
     )
-    webhook.send(embeds=[embed])
+    print("Sending test notification...")
+    try:
+        webhook.send(embeds=[embed])
+    except urllib.error.HTTPError as e:
+        print(f"ERROR: Discord webhook returned {e.code} {e.reason}", file=sys.stderr)
+        if e.code == 403:
+            print("  -> Webhook URL is invalid or deleted.", file=sys.stderr)
+            print("  -> Discord: Server Settings > Integrations > Webhooks", file=sys.stderr)
+        raise SystemExit(1) from None
+    except Exception as e:
+        print(f"ERROR: Failed to send Discord notification: {e}", file=sys.stderr)
+        raise SystemExit(1) from None
     print("Test notification sent successfully.")
 
 

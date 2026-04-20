@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import urllib.error
 import urllib.request
 from datetime import datetime
 from enum import Enum
@@ -35,6 +36,16 @@ class SyncResult(Enum):
     ERROR = "error"
 
 
+def _send_webhook(webhook: DiscordWebhook, embeds: list[Embed]) -> None:
+    """Send webhook with error handling. Never raises."""
+    try:
+        webhook.send(embeds=embeds)
+    except urllib.error.HTTPError as e:
+        logger.error("Discord webhook failed: %s %s — check webhook URL", e.code, e.reason)
+    except Exception as e:
+        logger.error("Discord webhook failed: %s", e)
+
+
 def _notify_conflict(
     webhook: DiscordWebhook | None,
     repo: RepoConfig,
@@ -50,7 +61,7 @@ def _notify_conflict(
     embed.add_field("Branch", repo.branch, inline=True)
     embed.add_field("Direction", repo.direction.value, inline=True)
     embed.add_field("Reason", reason)
-    webhook.send(embeds=[embed])
+    _send_webhook(webhook, [embed])
 
 
 def _notify_summary(
@@ -74,7 +85,7 @@ def _notify_summary(
     )
     for repo, result in notable:
         embed.add_field(str(repo.path), result.value, inline=True)
-    webhook.send(embeds=[embed])
+    _send_webhook(webhook, [embed])
 
 
 def sync_repo(
