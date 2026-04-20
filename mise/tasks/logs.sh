@@ -25,20 +25,20 @@ if [[ -z "$selected" ]]; then
 fi
 
 case "$selected" in
-file)
-  print_c cyan "ログファイルを表示します"
-  tail -f "$LOG_FILE"
-  ;;
-journal)
-  print_c cyan "journalctl で直近 50 件を表示します"
-  journalctl -u repo-sync.service -n 50 --no-pager
-  ;;
-timer)
-  print_c cyan "次回実行時刻を確認します"
-  systemctl list-timers repo-sync.timer
-  ;;
-*)
-  print_c red "無効なオプションです: $selected (file|journal|timer)"
-  exit 1
-  ;;
+  file)
+    print_c cyan "ログファイルを表示します"
+    tail -f "$LOG_FILE"
+    ;;
+  journal)
+    print_c cyan "journalctl で直近 50 件を表示します"
+    journalctl -u repo-sync.service -n 50 --no-pager
+    ;;
+  timer)
+    print_c cyan "次回実行時刻を確認します"
+    systemctl list-timers repo-sync.timer
+    ;;
+  *)
+    print_c red "無効なオプションです: $selected (file|journal|timer)"
+    exit 1
+    ;;
 esac

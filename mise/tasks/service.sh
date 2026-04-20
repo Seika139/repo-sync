@@ -25,31 +25,31 @@ if [[ -z "$selected" ]]; then
 fi
 
 case "$selected" in
-status)
-  print_c cyan "timer の状態を表示します"
-  systemctl list-timers repo-sync.timer
-  echo ""
-  systemctl status repo-sync.timer --no-pager || true
-  ;;
-start)
-  print_c cyan "手動で即時実行します (one-shot)"
-  sudo systemctl start repo-sync.service
-  ;;
-stop)
-  print_c cyan "timer を停止します"
-  sudo systemctl stop repo-sync.timer
-  ;;
-enable)
-  print_c cyan "timer を有効化して開始します"
-  sudo systemctl enable --now repo-sync.timer
-  ;;
-disable)
-  print_c cyan "timer を停止して無効化します"
-  sudo systemctl stop repo-sync.timer
-  sudo systemctl disable repo-sync.timer
-  ;;
-*)
-  print_c red "無効なオプションです: $selected (status|start|stop|enable|disable)"
-  exit 1
-  ;;
+  status)
+    print_c cyan "timer の状態を表示します"
+    systemctl list-timers repo-sync.timer
+    echo ""
+    systemctl status repo-sync.timer --no-pager || true
+    ;;
+  start)
+    print_c cyan "手動で即時実行します (one-shot)"
+    sudo systemctl start repo-sync.service
+    ;;
+  stop)
+    print_c cyan "timer を停止します"
+    sudo systemctl stop repo-sync.timer
+    ;;
+  enable)
+    print_c cyan "timer を有効化して開始します"
+    sudo systemctl enable --now repo-sync.timer
+    ;;
+  disable)
+    print_c cyan "timer を停止して無効化します"
+    sudo systemctl stop repo-sync.timer
+    sudo systemctl disable repo-sync.timer
+    ;;
+  *)
+    print_c red "無効なオプションです: $selected (status|start|stop|enable|disable)"
+    exit 1
+    ;;
 esac
