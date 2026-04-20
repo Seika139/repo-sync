@@ -41,6 +41,9 @@ if [[ ! -f "$DEPLOY_DIR/pyproject.toml" ]]; then
 fi
 
 MISE_BIN=$(sudo -u "$DEPLOY_USER" bash -c 'command -v mise' 2>/dev/null || true)
+if [[ -z "$MISE_BIN" && -x "$DEPLOY_HOME/.local/bin/mise" ]]; then
+  MISE_BIN="$DEPLOY_HOME/.local/bin/mise"
+fi
 if [[ -z "$MISE_BIN" ]]; then
   echo "ERROR: mise not found in $DEPLOY_USER's PATH" >&2
   echo "  Install mise: curl https://mise.run | sh" >&2
