@@ -33,6 +33,9 @@ def main(config_path: str) -> None:
             print("  -> Webhook URL is invalid or deleted.", file=sys.stderr)
             print("  -> Discord: Server Settings > Integrations > Webhooks", file=sys.stderr)
         raise SystemExit(1) from None
+    except Exception as e:
+        print(f"ERROR: Failed to send Discord notification: {e}", file=sys.stderr)
+        raise SystemExit(1) from None
     print("Test notification sent successfully.")
 
 
