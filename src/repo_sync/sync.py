@@ -100,7 +100,7 @@ def sync_repo(
 
     # 0. Skip if not on the expected branch
     current_branch = get_current_branch(repo.path)
-    if current_branch != repo.branch:
+    if current_branch and current_branch != repo.branch:
         logger.info(
             "Skipping %s: on branch '%s' (expected '%s')", repo.path, current_branch, repo.branch
         )
