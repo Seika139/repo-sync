@@ -33,7 +33,7 @@ echo "=== repo-sync installer ==="
 # ---------------------------------------------------------------------------
 # 1. Verify repo-sync is deployable
 # ---------------------------------------------------------------------------
-echo "[1/5] Verifying repo-sync installation..."
+echo "[1/6] Verifying repo-sync installation..."
 if [[ ! -f "$DEPLOY_DIR/pyproject.toml" ]]; then
   echo "ERROR: $DEPLOY_DIR/pyproject.toml not found" >&2
   echo "  Clone the repo first: git clone git@github.com:Seika139/repo-sync.git $DEPLOY_DIR" >&2
@@ -56,21 +56,32 @@ echo "  -> mise found at $MISE_BIN"
 # ---------------------------------------------------------------------------
 # 2. Sync dependencies via mise + uv
 # ---------------------------------------------------------------------------
-echo "[2/5] Syncing dependencies..."
+echo "[2/6] Syncing dependencies..."
 sudo -u "$DEPLOY_USER" bash -c 'cd "$1" && "$2" exec -- uv sync --frozen' _ "$DEPLOY_DIR" "$MISE_BIN"
 echo "  -> dependencies synced"
 
 # ---------------------------------------------------------------------------
 # 3. Create log directory
 # ---------------------------------------------------------------------------
-echo "[3/5] Creating log directory $LOG_DIR..."
+echo "[3/6] Creating log directory $LOG_DIR..."
 mkdir -p "$LOG_DIR"
 chown "$DEPLOY_USER:$DEPLOY_USER" "$LOG_DIR"
 
 # ---------------------------------------------------------------------------
+# 4. Grant journal read access for weekly summary
+# ---------------------------------------------------------------------------
+echo "[4/6] Granting journal access..."
+if ! id -nG "$DEPLOY_USER" | rg -qw systemd-journal; then
+  usermod -aG systemd-journal "$DEPLOY_USER"
+  echo "  -> $DEPLOY_USER added to systemd-journal group"
+else
+  echo "  -> $DEPLOY_USER already in systemd-journal group"
+fi
+
+# ---------------------------------------------------------------------------
 # 4. Set up logrotate
 # ---------------------------------------------------------------------------
-echo "[4/5] Configuring logrotate..."
+echo "[5/6] Configuring logrotate..."
 cat >/etc/logrotate.d/repo-sync <<LOGROTATE
 ${LOG_DIR}/*.log {
     weekly
@@ -86,7 +97,7 @@ echo "  -> logrotate configured (weekly, 4 rotations)"
 # ---------------------------------------------------------------------------
 # 5. Install systemd units
 # ---------------------------------------------------------------------------
-echo "[5/5] Installing systemd units..."
+echo "[6/6] Installing systemd units..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 sed_escape() {
