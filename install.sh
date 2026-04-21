@@ -71,7 +71,7 @@ chown "$DEPLOY_USER:$DEPLOY_USER" "$LOG_DIR"
 # 4. Grant journal read access for weekly summary
 # ---------------------------------------------------------------------------
 echo "[4/6] Granting journal access..."
-if ! id -nG "$DEPLOY_USER" | rg -qw systemd-journal; then
+if ! id -nG "$DEPLOY_USER" | grep -qw systemd-journal; then
   usermod -aG systemd-journal "$DEPLOY_USER"
   echo "  -> $DEPLOY_USER added to systemd-journal group"
 else

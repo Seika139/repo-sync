@@ -62,7 +62,7 @@ def _parse_stats(lines: list[str]) -> dict[str, int]:
 
 def _count_runs(lines: list[str]) -> tuple[int, int]:
     """Count successful and failed service runs from journal lines."""
-    successes = sum(1 for line in lines if "Finished" in line)
+    successes = sum(1 for line in lines if "Finished repo-sync.service" in line)
     failures = sum(
         1 for line in lines if "repo-sync.service: Failed with result" in line
     )
