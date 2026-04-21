@@ -23,9 +23,11 @@ def _get_log_lines(log_file: Path, since: datetime) -> list[str]:
         return []
     since_str = since.strftime("%Y-%m-%d")
     lines: list[str] = []
-    for line in log_file.read_text().splitlines():
-        if line >= since_str:
-            lines.append(line)
+    with log_file.open() as f:
+        for line in f:
+            line = line.rstrip()
+            if line[:4].isdigit() and line >= since_str:
+                lines.append(line)
     return lines
 
 
@@ -60,8 +62,9 @@ def _parse_stats(lines: list[str]) -> dict[str, int]:
 
 def _count_runs(lines: list[str]) -> tuple[int, int]:
     """Count successful and failed service runs from journal lines."""
-    successes = sum(1 for line in lines if "Started" in line)
+    started = sum(1 for line in lines if "Started" in line)
     failures = sum(1 for line in lines if "Failed" in line and "repo-sync.service" in line)
+    successes = started - failures
     return successes, failures
 
 
