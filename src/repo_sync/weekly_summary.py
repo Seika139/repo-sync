@@ -14,6 +14,19 @@ from discord_notify.webhook import COLOR_ERROR, COLOR_SUCCESS
 from repo_sync.config import load_config
 
 DEFAULT_CONFIG = Path("~/.config/repo-sync/config.yaml").expanduser()
+DEFAULT_LOG_FILE = Path("/var/log/repo-sync/repo-sync.log")
+
+
+def _get_log_lines(log_file: Path, since: datetime) -> list[str]:
+    """Read lines from the log file that are newer than `since`."""
+    if not log_file.exists():
+        return []
+    since_str = since.strftime("%Y-%m-%d")
+    lines: list[str] = []
+    for line in log_file.read_text().splitlines():
+        if line >= since_str:
+            lines.append(line)
+    return lines
 
 
 def _get_journal_lines(since: str) -> list[str]:
@@ -47,7 +60,7 @@ def _parse_stats(lines: list[str]) -> dict[str, int]:
 
 def _count_runs(lines: list[str]) -> tuple[int, int]:
     """Count successful and failed service runs from journal lines."""
-    successes = sum(1 for line in lines if "Succeeded" in line or "Finished" in line)
+    successes = sum(1 for line in lines if "Started" in line)
     failures = sum(1 for line in lines if "Failed" in line and "repo-sync.service" in line)
     return successes, failures
 
@@ -61,17 +74,20 @@ def main() -> int:
 
     webhook = DiscordWebhook(config.discord_webhook_url, username=config.bot_username)
 
-    since = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
-    lines = _get_journal_lines(since)
+    now = datetime.now()
+    since_dt = now - timedelta(days=7)
+    since_str = since_dt.strftime("%Y-%m-%d")
 
-    stats = _parse_stats(lines)
-    successes, failures = _count_runs(lines)
+    log_lines = _get_log_lines(DEFAULT_LOG_FILE, since_dt)
+    journal_lines = _get_journal_lines(since_str)
+
+    stats = _parse_stats(log_lines)
+    successes, failures = _count_runs(journal_lines)
 
     has_error = stats.get("conflict", 0) > 0 or stats.get("error", 0) > 0 or failures > 0
     color = COLOR_ERROR if has_error else COLOR_SUCCESS
 
-    now = datetime.now()
-    period_start = (now - timedelta(days=7)).strftime("%m/%d")
+    period_start = since_dt.strftime("%m/%d")
     period_end = now.strftime("%m/%d")
 
     embed = Embed(
