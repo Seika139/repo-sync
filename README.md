@@ -117,10 +117,12 @@ uv run repo-sync -v
 
 - 実行ファイル（`chmod +x`）として配置すること。実行権限が無い場合は警告ログを出してスキップする。
 - `cwd` はリポジトリのルート。
-- `pre-sync.sh` は auto-commit より前に走るため、生成したファイルは `auto_commit: true` のリポジトリであれば自動的にコミット & push される。
+- `pre-sync.sh` は auto-commit より前に走るため、生成したファイルは `direction: push` または `both` で `auto_commit: true` のリポジトリであれば、同一サイクルで自動的にコミット & push される。`pull` のリポジトリでは生成ファイルは未コミットのまま残る。
 - `post-sync.sh` は sync 結果が `up-to-date` / `pulled` / `pushed` / `rebased-and-pushed` のいずれかの場合にのみ実行される。`conflict` / `error` のときはスキップする。
 - 期待ブランチ以外にチェックアウトされているリポジトリでは、sync 自体が skip されるためフックも実行されない。
 - フックが非 0 で終了した場合、そのリポジトリの結果は `error` になり Discord 通知が送られる。
+- フックは 15 分（`HOOK_TIMEOUT_SEC`）で強制終了される。ハングや長時間実行のフックは失敗扱い。
+- shebang 不備や interpreter 不在などで exec 自体が失敗した場合も `error` として通知される。
 - `--dry-run` 時は実行されず、ログに「would run」とだけ出す。
 
 ### 例: second-brain の post-sync
