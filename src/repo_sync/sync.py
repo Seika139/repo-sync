@@ -16,6 +16,7 @@ from repo_sync.git_ops import (
     RepoStatus,
     commit_all,
     fetch,
+    get_current_branch,
     get_repo_status,
     has_uncommitted_changes,
     pull_ff,
@@ -96,6 +97,18 @@ def sync_repo(
 ) -> SyncResult:
     """Synchronize a single repository. Returns the outcome."""
     logger.info("Syncing %s (direction=%s)", repo.path, repo.direction.value)
+
+    # 0. Skip if not on the expected branch
+    current_branch = get_current_branch(repo.path)
+    if not current_branch:
+        logger.error("Could not determine current branch for %s", repo.path)
+        _notify_conflict(webhook, repo, "Could not determine current branch")
+        return SyncResult.ERROR
+    if current_branch != repo.branch:
+        logger.info(
+            "Skipping %s: on branch '%s' (expected '%s')", repo.path, current_branch, repo.branch
+        )
+        return SyncResult.UP_TO_DATE
 
     # 1. Fetch remote
     fetch_result = fetch(repo.path, repo.remote)
