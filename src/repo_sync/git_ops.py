@@ -58,8 +58,9 @@ def commit_all(cwd: Path, message: str) -> GitResult:
 
 
 def get_current_branch(cwd: Path) -> str:
+    """Return the current branch name, or empty string on failure."""
     result = git("rev-parse", "--abbrev-ref", "HEAD", cwd=cwd)
-    return result.stdout
+    return result.stdout if result.ok else ""
 
 
 def get_repo_status(cwd: Path, remote: str = "origin", branch: str = "main") -> RepoStatus:
