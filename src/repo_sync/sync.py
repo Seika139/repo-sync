@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import subprocess
 import urllib.error
 import urllib.request
 from datetime import datetime
@@ -26,6 +28,8 @@ from repo_sync.git_ops import (
 )
 
 logger = logging.getLogger(__name__)
+
+HOOK_DIR = ".repo-sync"
 
 
 class SyncResult(Enum):
@@ -89,6 +93,48 @@ def _notify_summary(
     _send_webhook(webhook, [embed])
 
 
+def _run_hook(repo: RepoConfig, phase: str, *, dry_run: bool) -> bool:
+    """Run `.repo-sync/{phase}-sync.sh` if present and executable.
+
+    Returns True when the hook is absent, skipped, or succeeds.
+    Returns False only when the hook ran and exited non-zero.
+    """
+    hook = repo.path / HOOK_DIR / f"{phase}-sync.sh"
+    if not hook.is_file():
+        return True
+    if not os.access(hook, os.X_OK):
+        logger.warning("Hook is not executable, skipping: %s", hook)
+        return True
+    if dry_run:
+        logger.info("Dry-run: would run %s hook %s", phase, hook)
+        return True
+
+    logger.info("Running %s-sync hook for %s", phase, repo.path)
+    result = subprocess.run(  # noqa: S603
+        [str(hook)], cwd=repo.path, capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        logger.error(
+            "%s-sync hook failed for %s (exit=%d)\nstderr:\n%s\nstdout:\n%s",
+            phase,
+            repo.path,
+            result.returncode,
+            result.stderr.strip(),
+            result.stdout.strip(),
+        )
+        return False
+    logger.info("%s-sync hook completed for %s", phase, repo.path)
+    return True
+
+
+_POST_HOOK_RESULTS = (
+    SyncResult.UP_TO_DATE,
+    SyncResult.PULLED,
+    SyncResult.PUSHED,
+    SyncResult.REBASED_AND_PUSHED,
+)
+
+
 def sync_repo(
     repo: RepoConfig,
     webhook: DiscordWebhook | None,
@@ -110,6 +156,29 @@ def sync_repo(
         )
         return SyncResult.UP_TO_DATE
 
+    # 0.5. Pre-sync hook (runs before fetch so generated files can be auto-committed)
+    if not _run_hook(repo, "pre", dry_run=dry_run):
+        _notify_conflict(webhook, repo, "pre-sync hook failed")
+        return SyncResult.ERROR
+
+    result = _sync_git(repo, webhook, dry_run=dry_run)
+
+    # 5. Post-sync hook (only on success paths; skip on CONFLICT/ERROR)
+    if result in _POST_HOOK_RESULTS:
+        if not _run_hook(repo, "post", dry_run=dry_run):
+            _notify_conflict(webhook, repo, "post-sync hook failed")
+            return SyncResult.ERROR
+
+    return result
+
+
+def _sync_git(
+    repo: RepoConfig,
+    webhook: DiscordWebhook | None,
+    *,
+    dry_run: bool,
+) -> SyncResult:
+    """Run the git-side of sync: fetch, auto-commit, status check, dispatch."""
     # 1. Fetch remote
     fetch_result = fetch(repo.path, repo.remote)
     if not fetch_result.ok:

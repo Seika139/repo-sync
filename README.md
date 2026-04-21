@@ -104,6 +104,34 @@ uv run repo-sync -v
 - rebase 成功 → `git push`
 - rebase 失敗 → `git rebase --abort` で元に戻し、Discord で通知
 
+## フック (`.repo-sync/pre-sync.sh` / `post-sync.sh`)
+
+リポジトリ直下に `.repo-sync/pre-sync.sh` / `.repo-sync/post-sync.sh` を配置しておくと、repo-sync が自動で検知して実行する。設定ファイル (`config.yaml`) への追記は不要。
+
+| フック            | 実行タイミング                              | 用途例                                   |
+| ----------------- | ------------------------------------------- | ---------------------------------------- |
+| `pre-sync.sh`     | `git fetch` より前                          | バックアップ生成、動的ファイル更新       |
+| `post-sync.sh`    | sync が成功した後 (up-to-date 含む)         | インデックス再構築、キャッシュ無効化     |
+
+### 仕様
+
+- 実行ファイル（`chmod +x`）として配置すること。実行権限が無い場合は警告ログを出してスキップする。
+- `cwd` はリポジトリのルート。
+- `pre-sync.sh` は auto-commit より前に走るため、生成したファイルは `auto_commit: true` のリポジトリであれば自動的にコミット & push される。
+- `post-sync.sh` は sync 結果が `up-to-date` / `pulled` / `pushed` / `rebased-and-pushed` のいずれかの場合にのみ実行される。`conflict` / `error` のときはスキップする。
+- 期待ブランチ以外にチェックアウトされているリポジトリでは、sync 自体が skip されるためフックも実行されない。
+- フックが非 0 で終了した場合、そのリポジトリの結果は `error` になり Discord 通知が送られる。
+- `--dry-run` 時は実行されず、ログに「would run」とだけ出す。
+
+### 例: second-brain の post-sync
+
+```bash
+# /opt/second-brain/.repo-sync/post-sync.sh
+#!/usr/bin/env bash
+set -euo pipefail
+uv run kc index
+```
+
 ## デプロイ (systemd timer)
 
 VPS に systemd timer として設置する手順。

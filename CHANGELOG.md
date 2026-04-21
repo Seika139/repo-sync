@@ -15,6 +15,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- リポジトリ直下の `.repo-sync/pre-sync.sh` と `.repo-sync/post-sync.sh` を自動検知して実行する
+  hook discovery 機能を追加する。`pre-sync.sh` は `git fetch` より前、`post-sync.sh` は sync
+  成功時にリポジトリのルートで実行される。フックが非 0 で終了したリポジトリは `error` として
+  記録し、Discord に通知する。
+
 ## [0.1.1] - 2026-04-14
 
 ### Added
