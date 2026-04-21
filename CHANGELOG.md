@@ -22,6 +22,12 @@
   成功時にリポジトリのルートで実行される。フックが非 0 で終了したリポジトリは `error` として
   記録し、Discord に通知する。
 
+### Fixed
+
+- `commit_all` が `git add -A` の結果を捨てていたため、nested git repo などで add が失敗すると
+  stderr が空のまま「Commit failed: 」とだけログされる問題を修正する。add 失敗時はそのまま
+  `GitResult` を伝播し、呼び出し側で Discord 通知まで行う。
+
 ## [0.1.1] - 2026-04-14
 
 ### Added

@@ -64,6 +64,18 @@ class TestCommitAll:
         assert result.ok
         assert not has_uncommitted_changes(local)
 
+    def test_returns_add_failure(self, git_pair: tuple[Path, Path]) -> None:
+        """`git add -A` failure must propagate to the caller with stderr."""
+        local, _ = git_pair
+        # Nested git repo with no commits → `git add -A` fails with exit 128
+        nested = local / "nested"
+        nested.mkdir()
+        _run_git("init", "--initial-branch=main", cwd=nested)
+
+        result = commit_all(local, "test commit")
+        assert not result.ok
+        assert "nested" in result.stderr or "commit" in result.stderr.lower()
+
 
 class TestGetCurrentBranch:
     def test_main(self, git_pair: tuple[Path, Path]) -> None:

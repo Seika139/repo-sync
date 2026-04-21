@@ -194,7 +194,12 @@ def _sync_git(
             if not dry_run:
                 commit_result = commit_all(repo.path, msg)
                 if not commit_result.ok:
-                    logger.error("Commit failed: %s", commit_result.stderr)
+                    logger.error(
+                        "Auto-commit failed for %s: %s", repo.path, commit_result.stderr
+                    )
+                    _notify_conflict(
+                        webhook, repo, f"auto-commit failed: {commit_result.stderr}"
+                    )
                     return SyncResult.ERROR
 
     # 3. Determine status
