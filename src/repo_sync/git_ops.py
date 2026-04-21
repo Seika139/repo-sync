@@ -53,7 +53,9 @@ def has_uncommitted_changes(cwd: Path) -> bool:
 
 
 def commit_all(cwd: Path, message: str) -> GitResult:
-    git("add", "-A", cwd=cwd)
+    add_result = git("add", "-A", cwd=cwd)
+    if not add_result.ok:
+        return add_result
     return git("commit", "-m", message, cwd=cwd)
 
 

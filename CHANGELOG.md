@@ -15,6 +15,25 @@
 
 ## [Unreleased]
 
+### Added
+
+- リポジトリ直下の `.repo-sync/pre-sync.sh` と `.repo-sync/post-sync.sh` を自動検知して実行する
+  hook discovery 機能を追加する。`pre-sync.sh` は `git fetch` より前、`post-sync.sh` は sync
+  成功時にリポジトリのルートで実行される。フックが非 0 で終了した場合は `error` として記録し、
+  Discord に通知する。
+- フックは 15 分 (`HOOK_TIMEOUT_SEC`) で強制終了する。shebang 不備などで exec 自体が失敗した
+  場合も `OSError` を捕捉して `error` として通知する。フック出力は 4000 文字 (`MAX_HOOK_OUTPUT_CHARS`)
+  で末尾からトランケートしてログする。
+- 失敗時の Discord 通知タイトルをシナリオ別に分岐する (`Pre-sync hook failed`,
+  `Post-sync hook failed`, `Auto-commit failed`)。従来は全て `Sync conflict detected` に
+  固定されていた。
+
+### Fixed
+
+- `commit_all` が `git add -A` の結果を捨てていたため、nested git repo などで add が失敗すると
+  stderr が空のまま「Commit failed: 」とだけログされる問題を修正する。add 失敗時はそのまま
+  `GitResult` を伝播し、呼び出し側で Discord 通知まで行う。
+
 ## [0.1.1] - 2026-04-14
 
 ### Added
