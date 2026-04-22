@@ -5,22 +5,31 @@ shfmt = "latest"
 
 [tasks.init]
 description = "初期化 (依存のインストールと config.yaml の作成)"
+quiet = true
 run = '''
 mise install
 chmod +x install.sh mise/tasks/*.sh
 sudo DEPLOY_DIR="$(pwd)" bash install.sh
 '''
 
+[tasks.upgrade]
+description = "依存のアップグレード"
+quiet = true
+run = 'uv sync --upgrade'
+
 [tasks.sync]
 description = "依存を同期"
+quiet = true
 run = "uv sync"
 
 [tasks.test]
 description = "pytest + bats を実行"
+quiet = true
 run = ["uv run pytest -v", "bats tests/*.bats"]
 
 [tasks.lint]
 description = "ruff + shellcheck + shfmt + yamllint"
+quiet = true
 run = [
   "uv run ruff check .",
   "uv run ruff format --check .",
@@ -31,6 +40,7 @@ run = [
 
 [tasks.format]
 description = "ruff format + shfmt"
+quiet = true
 run = [
   "uv run ruff format .",
   "shfmt -w -i 2 -ci mise/tasks/*.sh mise/common.sh install.sh",
@@ -38,4 +48,5 @@ run = [
 
 [tasks.run]
 description = "repo-sync を実行"
+quiet = true
 run = "uv run repo-sync"
