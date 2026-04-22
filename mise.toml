@@ -2,21 +2,59 @@
 uv = "0.11.6"
 python = "3.14.4"
 shfmt = "latest"
+shellcheck = "0.11.0"
+yamllint = "1.38.0"
+bats = "1.13.0"
 
 [tasks.init]
 description = "初期化 (依存のインストールと config.yaml の作成)"
 run = '''
 mise install
 chmod +x install.sh mise/tasks/*.sh
-sudo DEPLOY_DIR="$(pwd)" bash install.sh
+OS_NAME="$(uname -s)"
+if [ "$OS_NAME" = "Linux" ]; then
+  sudo DEPLOY_DIR="$(pwd)" bash install.sh
+else
+  cat >&2 <<EOF
+
+================================================================
+  WARNING: $OS_NAME detected — install.sh はスキップします
+================================================================
+  repo-sync の常駐運用は Ubuntu + systemd timer が前提です。
+  install.sh は systemd ユニット配置・logrotate 設定・journal
+  権限付与など Linux 専用の作業を行うため、$OS_NAME では実行
+  できません。
+
+  代わりに開発用の依存同期 (uv sync) のみ実行します。
+
+  macOS で使える主なコマンド:
+    mise run test               pytest + bats
+    mise run lint               ruff / shellcheck / shfmt / yamllint
+    mise run format             自動整形
+    uv run repo-sync --dry-run  同期処理のロジック検証 (副作用なし)
+
+  常駐実行したい場合は Ubuntu サーバーで 'sudo bash install.sh'
+  を実行してください。詳細は README の「インストール」参照。
+================================================================
+
+EOF
+  uv sync
+fi
 '''
+
+[tasks.upgrade]
+description = "依存のアップグレード"
+quiet = true
+run = 'uv sync --upgrade'
 
 [tasks.sync]
 description = "依存を同期"
+quiet = true
 run = "uv sync"
 
 [tasks.test]
 description = "pytest + bats を実行"
+quiet = true
 run = ["uv run pytest -v", "bats tests/*.bats"]
 
 [tasks.lint]
@@ -31,6 +69,7 @@ run = [
 
 [tasks.format]
 description = "ruff format + shfmt"
+quiet = true
 run = [
   "uv run ruff format .",
   "shfmt -w -i 2 -ci mise/tasks/*.sh mise/common.sh install.sh",
@@ -38,4 +77,5 @@ run = [
 
 [tasks.run]
 description = "repo-sync を実行"
+quiet = true
 run = "uv run repo-sync"

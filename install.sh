@@ -5,13 +5,8 @@
 # =============================================================================
 set -euo pipefail
 
-DEPLOY_USER="${DEPLOY_USER:-ebi}"
-DEPLOY_HOME="${DEPLOY_HOME:-$(getent passwd "$DEPLOY_USER" | cut -d: -f6)}"
-DEPLOY_DIR="${DEPLOY_DIR:-$DEPLOY_HOME/programs/tools/repo-sync}"
-LOG_DIR="${LOG_DIR:-/var/log/repo-sync}"
-
 # ---------------------------------------------------------------------------
-# Pre-flight checks
+# Pre-flight checks (OS / 権限) — デフォルト値の評価より先に行う
 # ---------------------------------------------------------------------------
 if [[ "$(uname -s)" != "Linux" ]]; then
   echo "ERROR: This script is intended for Linux (Ubuntu) only" >&2
@@ -23,10 +18,16 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
+DEPLOY_USER="${DEPLOY_USER:-ebi}"
+
 if ! id "$DEPLOY_USER" &>/dev/null; then
   echo "ERROR: User '$DEPLOY_USER' does not exist" >&2
   exit 1
 fi
+
+DEPLOY_HOME="${DEPLOY_HOME:-$(getent passwd "$DEPLOY_USER" | cut -d: -f6)}"
+DEPLOY_DIR="${DEPLOY_DIR:-$DEPLOY_HOME/programs/tools/repo-sync}"
+LOG_DIR="${LOG_DIR:-/var/log/repo-sync}"
 
 echo "=== repo-sync installer ==="
 
