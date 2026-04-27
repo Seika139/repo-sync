@@ -49,7 +49,7 @@ strict = true
 dev = [
   "mypy>=1.18",
   "pytest>=8.0",
-  "ruff>=0.11",
-  "ty>=0.0.14",
+  "ruff>=0.15.11",
+  "ty>=0.0.31",
   "types-pyyaml>=6.0.12.20260408",
 ]
