@@ -5,9 +5,12 @@ from pathlib import Path
 
 import pytest
 
+from repo_sync import git_ops
 from repo_sync.git_ops import (
     GitResult,
     RepoStatus,
+    _is_transient_error,
+    _with_retry,
     commit_all,
     get_current_branch,
     get_repo_status,
@@ -136,3 +139,87 @@ class TestGitResult:
     def test_ok(self) -> None:
         assert GitResult(0, "out", "").ok is True
         assert GitResult(1, "", "err").ok is False
+
+
+class TestIsTransientError:
+    @pytest.mark.parametrize(
+        "stderr",
+        [
+            "ERROR: internal error performing authentication",
+            "kex_exchange_identification: Connection reset by peer",
+            "ssh: connect to host github.com port 22: Connection timed out",
+            "fatal: unable to access 'https://...': Could not resolve hostname github.com",
+            "fatal: the remote end hung up unexpectedly",
+            "fatal: early EOF",
+            "remote: error: 502 Bad Gateway",
+            "RPC failed; HTTP 503 curl 22",
+        ],
+    )
+    def test_transient_patterns(self, stderr: str) -> None:
+        assert _is_transient_error(stderr) is True
+
+    @pytest.mark.parametrize(
+        "stderr",
+        [
+            "",
+            "fatal: refusing to merge unrelated histories",
+            "error: failed to push some refs (non-fast-forward)",
+            "Permission denied (publickey)",
+            "CONFLICT (content): Merge conflict in README.md",
+            "fatal: not a git repository",
+        ],
+    )
+    def test_non_transient(self, stderr: str) -> None:
+        assert _is_transient_error(stderr) is False
+
+
+class TestWithRetry:
+    @pytest.fixture(autouse=True)
+    def _no_sleep(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(git_ops.time, "sleep", lambda _s: None)
+
+    def test_succeeds_immediately_no_retry(self) -> None:
+        calls = [0]
+
+        def fn() -> GitResult:
+            calls[0] += 1
+            return GitResult(0, "ok", "")
+
+        result = _with_retry("fetch", fn)
+        assert result.ok
+        assert calls[0] == 1
+
+    def test_recovers_on_second_attempt(self) -> None:
+        calls = [0]
+
+        def fn() -> GitResult:
+            calls[0] += 1
+            if calls[0] == 1:
+                return GitResult(128, "", "ERROR: internal error performing authentication")
+            return GitResult(0, "ok", "")
+
+        result = _with_retry("fetch", fn)
+        assert result.ok
+        assert calls[0] == 2
+
+    def test_exhausts_retries_on_persistent_transient(self) -> None:
+        calls = [0]
+
+        def fn() -> GitResult:
+            calls[0] += 1
+            return GitResult(128, "", "kex_exchange_identification: Connection reset by peer")
+
+        result = _with_retry("fetch", fn)
+        assert not result.ok
+        assert calls[0] == git_ops.MAX_NETWORK_ATTEMPTS
+
+    def test_no_retry_on_non_transient_error(self) -> None:
+        calls = [0]
+
+        def fn() -> GitResult:
+            calls[0] += 1
+            return GitResult(1, "", "error: failed to push some refs (non-fast-forward)")
+
+        result = _with_retry("push", fn)
+        assert not result.ok
+        assert calls[0] == 1
