@@ -9,6 +9,8 @@ source "$SCRIPT_DIR/common.sh"
 
 LOG_FILE="/var/log/repo-sync/repo-sync.log"
 LOG_WINDOW_MINUTES=60
+# awk のスキャン範囲を絞るためのプレフィルタ行数 (1 ラン ≒ 30 行なので 200 行 ≒ 6〜7 ラン)
+LOG_PREFILTER_LINES=200
 
 selected="${1:-}"
 
@@ -37,13 +39,14 @@ case "$selected" in
         cutoff=$(date -d "${LOG_WINDOW_MINUTES} minutes ago" '+%Y-%m-%d %H:%M:%S')
         ;;
     esac
+    # 末尾 200 行に絞ってから 60 分以内のタイムスタンプを抽出 (巨大ログでも O(末尾) 走査)
     # POSIX 互換のため {N} 量指定子は使わず文字クラスを並べる
-    awk -v cutoff="$cutoff" '
+    tail -n "$LOG_PREFILTER_LINES" "$LOG_FILE" | awk -v cutoff="$cutoff" '
       /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]/ {
         include = (substr($0, 1, 19) >= cutoff)
       }
       include { print }
-    ' "$LOG_FILE"
+    '
     ;;
   journal)
     print_c cyan "journalctl で直近 50 件を表示します"
