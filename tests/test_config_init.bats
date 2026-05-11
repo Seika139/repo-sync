@@ -29,8 +29,14 @@ teardown() {
   cd "$TEST_WORKDIR"
   run bash "$SCRIPT"
 
-  perms=$(stat -f "%Lp" "$TEST_HOME/.config/repo-sync/config.yaml" 2>/dev/null \
-    || stat -c "%a" "$TEST_HOME/.config/repo-sync/config.yaml" 2>/dev/null)
+  # BSD stat (macOS) と GNU stat (Linux 他) で構文が違うので uname で明示分岐。
+  # `stat -f "%Lp" file || stat -c "%a" file` 形式は GNU stat の -f が filesystem
+  # 情報モードで第 2 引数を別ファイルとして読みに行ってしまい成功扱いになるため、
+  # `||` フォールバックが発火せず Linux でテストが silently 破綻していた。
+  case "$(uname -s)" in
+    Darwin*) perms=$(stat -f "%Lp" "$TEST_HOME/.config/repo-sync/config.yaml") ;;
+    *)       perms=$(stat -c "%a" "$TEST_HOME/.config/repo-sync/config.yaml") ;;
+  esac
   [ "$perms" = "600" ]
 }
 

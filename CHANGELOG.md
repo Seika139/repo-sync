@@ -26,11 +26,14 @@
 - 失敗時の Discord 通知タイトルをシナリオ別に分岐する (`Pre-sync hook failed`, `Post-sync hook failed`, `Auto-commit failed`)。従来は全て `Sync conflict detected` に固定されていた。
 - リポジトリの HEAD が設定ブランチと異なる場合は sync をスキップする安全装置を追加する。作業ブランチを誤って push する事故を防ぐ ([#9](https://github.com/Seika139/repo-sync/pull/9))。
 - 運用支援用の mise タスクを追加する: `config-init` / `config-validate` / `logs` / `service` / `test-notify` / `test-summary`。
+- `mise run logs follow` を追加し、`tail -f` でログをリアルタイム監視できるようにする (Ctrl+C で終了) ([#19](https://github.com/Seika139/repo-sync/pull/19))。
+- `mise run service start` の完了後に `mise run logs file` を案内するメッセージを表示する ([#19](https://github.com/Seika139/repo-sync/pull/19))。
 
 ### Changed
 
 - `discord-notify` の依存を v0.1.3 に更新し、Discord 側の User-Agent 制限による 403 を解消する ([#8](https://github.com/Seika139/repo-sync/pull/8))。
 - `uv` 依存を最新版に更新する ([#15](https://github.com/Seika139/repo-sync/pull/15), [#16](https://github.com/Seika139/repo-sync/pull/16))。
+- `mise run logs file` を「直近 60 分のスナップショット」に変更する。末尾 200 行をプレフィルタしてから awk で時刻フィルタを適用するため、ログが巨大でも高速。GNU date (Linux / WSL) と BSD date (macOS) の構文差は `uname -s` で吸収する ([#19](https://github.com/Seika139/repo-sync/pull/19))。
 
 ### Fixed
 

@@ -193,9 +193,7 @@ def sync_repo(
     # 5. Post-sync hook (only on success paths; skip on CONFLICT/ERROR)
     if result in _POST_HOOK_RESULTS:
         if not _run_hook(repo, "post", dry_run=dry_run):
-            _notify_conflict(
-                webhook, repo, "post-sync hook failed", title="Post-sync hook failed"
-            )
+            _notify_conflict(webhook, repo, "post-sync hook failed", title="Post-sync hook failed")
             return SyncResult.ERROR
 
     return result
@@ -223,9 +221,7 @@ def _sync_git(
             if not dry_run:
                 commit_result = commit_all(repo.path, msg)
                 if not commit_result.ok:
-                    logger.error(
-                        "Auto-commit failed for %s: %s", repo.path, commit_result.stderr
-                    )
+                    logger.error("Auto-commit failed for %s: %s", repo.path, commit_result.stderr)
                     _notify_conflict(
                         webhook,
                         repo,
