@@ -176,7 +176,7 @@ class TestIsTransientError:
 class TestWithRetry:
     @pytest.fixture(autouse=True)
     def _no_sleep(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(git_ops.time, "sleep", lambda _s: None)
+        monkeypatch.setattr("repo_sync.git_ops.time.sleep", lambda _s: None)
 
     def test_succeeds_immediately_no_retry(self) -> None:
         calls = [0]
