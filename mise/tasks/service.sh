@@ -34,6 +34,9 @@ case "$selected" in
   start)
     print_c cyan "手動で即時実行します (one-shot)"
     sudo systemctl start repo-sync.service
+    echo ""
+    print_c green "実行が完了しました。"
+    echo "  ログを確認するには: mise run logs file"
     ;;
   stop)
     print_c cyan "timer を停止します"
