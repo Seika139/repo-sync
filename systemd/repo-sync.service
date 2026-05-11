@@ -10,8 +10,8 @@ User=__DEPLOY_USER__
 WorkingDirectory=__DEPLOY_DIR__
 ExecStart=__MISE_BIN__ exec -- uv run repo-sync
 
-# SSH 鍵を直接指定（systemd 環境には SSH agent がないため）
-Environment="GIT_SSH_COMMAND=ssh -i __DEPLOY_HOME__/.ssh/id_ed25519_github -o IdentitiesOnly=yes"
+# SSH 鍵は ~/.ssh/config (Include config.secret) に委譲
+# systemd では SSH agent が無いので IdentityFile による明示が必須
 
 # ログをファイルに出力（journalctl にはライフサイクルイベントが残る）
 StandardOutput=append:__LOG_DIR__/repo-sync.log
