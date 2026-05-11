@@ -142,7 +142,13 @@ VPS に systemd timer として設置する手順。
 
 - Ubuntu 20.04+
 - `mise` がインストール済み (`curl https://mise.run | sh`)
-- SSH 鍵 (`~/.ssh/id_ed25519_github`) で GitHub に認証可能
+- `~/.ssh/config` で GitHub 用の SSH 鍵が設定済み。systemd 環境には SSH agent が無いため、`IdentityFile` の明示が必須。例:
+
+  ```sshconfig
+  Host github.com
+    IdentityFile ~/.ssh/id_ed25519_github
+  ```
+
 - `~/.config/repo-sync/config.yaml` を作成済み
 
 ### セットアップ
