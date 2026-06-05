@@ -169,22 +169,24 @@ Host github.com
   IdentityFile ~/.ssh/id_ed25519_github
   IdentitiesOnly yes
   ControlMaster auto
-  ControlPath ~/.ssh/control/github.sock
+  ControlPath ~/.ssh/control/%n.sock
   ControlPersist 60s
 ```
+
+`%n` は接続時のエイリアス名（コマンドラインで指定したホスト名）に展開されるため、ソケット名が Host ごとに自動でユニークになり、全 Host ブロックで同一の記述を使い回せる。
 
 ポイント:
 
 - ソケットは `/tmp` ではなく `~/.ssh/control/` 配下に置く。systemd の `PrivateTmp=true` は `/tmp` を実行ごとに隔離するため、そこに置くと多重化が効かない。`$HOME` 配下なら systemd 実行と対話セッションでソケットを共有できる。
 - `ControlPersist 60s` は 1 回の実行内（逐次 fetch のリポ間ギャップ）を使い回す前提。30 分間隔の実行**間**では master は閉じ、実行ごとに 1 本だけ master を張り直す。
-- **複数アカウント (複数の Host エイリアスが同一 `HostName github.com` を共有) を使う場合**、`ControlPath` をエイリアスごとに別ファイル名にすること。共有すると、別鍵で認証済みの接続に誤って相乗りしてアクセス不能になる。`%C` や `%h` は `HostName` に解決されて衝突するため、固定名 (例: `github.sock` / `github-work.sock`) かエイリアス名トークン `%n` を使う。
+- **複数アカウント (複数の Host エイリアスが同一 `HostName github.com` を共有) を使う場合**、`ControlPath` をエイリアスごとに別ファイル名にする必要がある。共有すると、別鍵で認証済みの接続に誤って相乗りしてアクセス不能になるため。`%C` や `%h` は `HostName` に解決されて衝突するので、エイリアス名に展開される `%n` を使って `~/.ssh/control/%n.sock` と指定するのが最も安全で簡潔（全 Host ブロックで同じ記述を使い回せる）。
 
   ```sshconfig
   Host github.com
     IdentityFile ~/.ssh/id_ed25519_personal
     IdentitiesOnly yes
     ControlMaster auto
-    ControlPath ~/.ssh/control/personal.sock
+    ControlPath ~/.ssh/control/%n.sock
     ControlPersist 60s
 
   Host github.com-work
@@ -192,7 +194,7 @@ Host github.com
     IdentityFile ~/.ssh/id_ed25519_work
     IdentitiesOnly yes
     ControlMaster auto
-    ControlPath ~/.ssh/control/work.sock
+    ControlPath ~/.ssh/control/%n.sock
     ControlPersist 60s
   ```
 
