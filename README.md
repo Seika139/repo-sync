@@ -147,9 +147,58 @@ VPS に systemd timer として設置する手順。
   ```sshconfig
   Host github.com
     IdentityFile ~/.ssh/id_ed25519_github
+    IdentitiesOnly yes
   ```
 
 - `~/.config/repo-sync/config.yaml` を作成済み
+
+#### SSH 接続多重化 (推奨: 多数リポジトリ運用時の必須設定)
+
+多数のリポジトリを毎回まとめて同期すると、短時間に GitHub へ何本も SSH 接続を張ることになり、GitHub 側の SSH レート制限に当たって `git@github.com: Permission denied (publickey)` が**断続的に**発生することがある（鍵は正しいのに一部リポだけ失敗する症状）。これは恒久的な認証エラーではなくスロットリングであり、接続多重化 (`ControlMaster`) で 1 接続を使い回して接続本数を畳むことで回避できる。
+
+ソケット用ディレクトリを作成する。
+
+```bash
+mkdir -p ~/.ssh/control && chmod 700 ~/.ssh/control
+```
+
+`~/.ssh/config` の各 Host ブロックに以下を追記する。
+
+```sshconfig
+Host github.com
+  IdentityFile ~/.ssh/id_ed25519_github
+  IdentitiesOnly yes
+  ControlMaster auto
+  ControlPath ~/.ssh/control/%n.sock
+  ControlPersist 60s
+```
+
+`%n` は接続時のエイリアス名（コマンドラインで指定したホスト名）に展開されるため、ソケット名が Host ごとに自動でユニークになり、全 Host ブロックで同一の記述を使い回せる。
+
+ポイント:
+
+- ソケットは `/tmp` ではなく `~/.ssh/control/` 配下に置く。systemd の `PrivateTmp=true` は `/tmp` を実行ごとに隔離するため、そこに置くと多重化が効かない。`$HOME` 配下なら systemd 実行と対話セッションでソケットを共有できる。
+- `ControlPersist 60s` は 1 回の実行内（逐次 fetch のリポ間ギャップ）を使い回す前提。30 分間隔の実行**間**では master は閉じ、実行ごとに 1 本だけ master を張り直す。
+- **複数アカウント (複数の Host エイリアスが同一 `HostName github.com` を共有) を使う場合**、`ControlPath` をエイリアスごとに別ファイル名にする必要がある。共有すると、別鍵で認証済みの接続に誤って相乗りしてアクセス不能になるため。`%C` や `%h` は `HostName` に解決されて衝突するので、エイリアス名に展開される `%n` を使って `~/.ssh/control/%n.sock` と指定するのが最も安全で簡潔（全 Host ブロックで同じ記述を使い回せる）。
+
+  ```sshconfig
+  Host github.com
+    IdentityFile ~/.ssh/id_ed25519_personal
+    IdentitiesOnly yes
+    ControlMaster auto
+    ControlPath ~/.ssh/control/%n.sock
+    ControlPersist 60s
+
+  Host github.com-work
+    HostName github.com
+    IdentityFile ~/.ssh/id_ed25519_work
+    IdentitiesOnly yes
+    ControlMaster auto
+    ControlPath ~/.ssh/control/%n.sock
+    ControlPersist 60s
+  ```
+
+  多重化が効いているかは `ssh -O check github.com` で確認できる (`Master running (pid=...)` と出れば master が生存している)。
 
 ### セットアップ
 
