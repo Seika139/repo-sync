@@ -153,6 +153,9 @@ class TestIsTransientError:
             "fatal: early EOF",
             "remote: error: 502 Bad Gateway",
             "RPC failed; HTTP 503 curl 22",
+            "Connection closed by 20.27.177.113 port 22",
+            "fatal: unable to write flush packet: Broken pipe",
+            "fatal: expected flush after ref listing",
         ],
     )
     def test_transient_patterns(self, stderr: str) -> None:

@@ -52,6 +52,9 @@ TRANSIENT_STDERR_PATTERNS: tuple[str, ...] = (
     "remote: error: 5",
     "bad gateway",
     "service unavailable",
+    "connection closed by",  # GitHub SSH edge dropped mid-session
+    "broken pipe",  # e.g. "fatal: unable to write flush packet: Broken pipe"
+    "expected flush after ref listing",  # connection cut mid-ref-listing
 )
 
 MAX_NETWORK_ATTEMPTS = 3
