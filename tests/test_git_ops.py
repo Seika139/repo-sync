@@ -226,3 +226,28 @@ class TestWithRetry:
         result = _with_retry("push", fn)
         assert not result.ok
         assert calls[0] == 1
+
+
+class TestRebase:
+    def test_no_retry_even_on_transient_looking_stderr(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """rebase() must not retry: it's a local, non-idempotent op.
+
+        A GPG-signing "Broken pipe" during rebase matches TRANSIENT_STDERR_PATTERNS
+        by substring, but retrying would re-run `git rebase` against an
+        already-in-progress rebase state and mask the real (signing) error.
+        """
+        calls = [0]
+
+        def fake_git(*args: str, cwd: Path) -> GitResult:
+            calls[0] += 1
+            assert args[0] == "rebase"
+            return GitResult(128, "", "gpg: signing failed: Broken pipe")
+
+        monkeypatch.setattr(git_ops, "git", fake_git)
+
+        result = git_ops.rebase(Path("/does/not/matter"))
+
+        assert not result.ok
+        assert calls[0] == 1

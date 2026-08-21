@@ -159,7 +159,11 @@ def push(cwd: Path, remote: str = "origin", branch: str | None = None) -> GitRes
 
 
 def rebase(cwd: Path, remote: str = "origin", branch: str = "main") -> GitResult:
-    return _with_retry("rebase", lambda: git("rebase", f"{remote}/{branch}", cwd=cwd))
+    # Not retried: this is a local operation on an already-fetched remote-tracking
+    # ref (no network involved), and rebase is non-idempotent — retrying after a
+    # false-positive transient match (e.g. a GPG "Broken pipe" signing failure)
+    # would hit "already a rebase-merge directory" and mask the real error.
+    return git("rebase", f"{remote}/{branch}", cwd=cwd)
 
 
 def rebase_abort(cwd: Path) -> GitResult:
