@@ -405,6 +405,30 @@ class TestNotificationTitles:
         assert "conflict" not in title.lower()
 
 
+class TestIsRebaseConflict:
+    def test_unrelated_stderr_mentioning_conflict_is_not_a_conflict(self) -> None:
+        from repo_sync.git_ops import GitResult
+        from repo_sync.sync import _is_rebase_conflict
+
+        result = GitResult(
+            returncode=128,
+            stdout="",
+            stderr="fatal: invalid upstream 'conflict/main'",
+        )
+        assert _is_rebase_conflict(result) is False
+
+    def test_real_conflict_diagnostic_is_a_conflict(self) -> None:
+        from repo_sync.git_ops import GitResult
+        from repo_sync.sync import _is_rebase_conflict
+
+        result = GitResult(
+            returncode=1,
+            stdout="CONFLICT (content): Merge conflict in README.md",
+            stderr="",
+        )
+        assert _is_rebase_conflict(result) is True
+
+
 class TestTrimHookOutput:
     def test_short_unchanged(self) -> None:
         from repo_sync.sync import _trim_hook_output

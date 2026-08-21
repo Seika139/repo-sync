@@ -296,9 +296,9 @@ def _sync_push(
 
 
 _REBASE_CONFLICT_MARKERS = (
-    "conflict",
-    "could not apply",
-    "needs merge",
+    "CONFLICT (",
+    "Merge conflict in ",
+    "could not apply ",
 )
 
 
@@ -308,8 +308,13 @@ def _is_rebase_conflict(result: GitResult) -> bool:
     Rebase can fail for other reasons too (e.g. unstaged changes blocking the
     rebase), which should not be reported as a conflict requiring manual
     resolution.
+
+    Matching is case-sensitive and limited to git's actual conflict diagnostic
+    formats (e.g. "CONFLICT (content): ...", "could not apply <sha>...") to
+    avoid false positives when a remote/branch name happens to contain the
+    word "conflict".
     """
-    combined = f"{result.stdout}\n{result.stderr}".lower()
+    combined = f"{result.stdout}\n{result.stderr}"
     return any(marker in combined for marker in _REBASE_CONFLICT_MARKERS)
 
 
