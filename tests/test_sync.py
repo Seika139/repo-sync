@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from discord_notify import Embed
 
 from repo_sync.config import Direction, RepoConfig
 from repo_sync.sync import SyncResult, sync_repo
@@ -43,6 +44,17 @@ def _make_other_clone(bare: Path) -> Path:
 
 def _make_repo_config(path: Path, direction: Direction) -> RepoConfig:
     return RepoConfig(path=path, direction=direction, branch="main")
+
+
+class FakeWebhook:
+    """Records embeds sent via `_send_webhook` without hitting the network."""
+
+    def __init__(self) -> None:
+        self.sent_embeds: list[Embed] = []
+
+    def send(self, content: str = "", embeds: list[Embed] | None = None, **_: object) -> list[int]:
+        self.sent_embeds.extend(embeds or [])
+        return []
 
 
 class TestSyncPull:
@@ -310,6 +322,50 @@ class TestHooks:
 
         repo = _make_repo_config(local, Direction.BOTH)
         assert sync_repo(repo, webhook=None) == SyncResult.ERROR
+
+
+class TestNotificationTitles:
+    """Failure notifications must carry titles that reflect the actual failure,
+    not a generic "conflict" label (see issue #38)."""
+
+    def test_fetch_failure_notifies_with_fetch_failed_title(
+        self, git_pair: tuple[Path, Path]
+    ) -> None:
+        local, _ = git_pair
+        # An unconfigured remote name makes `git fetch` fail immediately, without
+        # any real network activity, and it is not a conflict of any kind.
+        repo = RepoConfig(
+            path=local, direction=Direction.PULL, branch="main", remote="no-such-remote"
+        )
+
+        webhook = FakeWebhook()
+        assert sync_repo(repo, webhook=webhook) == SyncResult.ERROR
+
+        assert len(webhook.sent_embeds) == 1
+        assert webhook.sent_embeds[0].title == "Fetch failed"
+
+    def test_rebase_conflict_notifies_with_conflict_title(
+        self, git_pair: tuple[Path, Path]
+    ) -> None:
+        local, bare = git_pair
+        # Remote modifies README
+        other = _make_other_clone(bare)
+        (other / "README.md").write_text("remote version")
+        _run_git("add", ".", cwd=other)
+        _run_git("commit", "-m", "remote", cwd=other)
+        _run_git("push", "origin", "main", cwd=other)
+
+        # Local also modifies README (real rebase conflict!)
+        (local / "README.md").write_text("local version")
+        _run_git("add", ".", cwd=local)
+        _run_git("commit", "-m", "local", cwd=local)
+
+        repo = _make_repo_config(local, Direction.BOTH)
+        webhook = FakeWebhook()
+        assert sync_repo(repo, webhook=webhook) == SyncResult.CONFLICT
+
+        assert len(webhook.sent_embeds) == 1
+        assert "conflict" in webhook.sent_embeds[0].title.lower()
 
 
 class TestTrimHookOutput:

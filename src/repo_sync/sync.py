@@ -61,12 +61,12 @@ def _send_webhook(webhook: DiscordWebhook, embeds: list[Embed]) -> None:
         logger.error("Discord webhook failed: %s", e)
 
 
-def _notify_conflict(
+def _notify_failure(
     webhook: DiscordWebhook | None,
     repo: RepoConfig,
     reason: str,
     *,
-    title: str = "Sync conflict detected",
+    title: str,
 ) -> None:
     if webhook is None:
         return
@@ -175,7 +175,7 @@ def sync_repo(
     current_branch = get_current_branch(repo.path)
     if not current_branch:
         logger.error("Could not determine current branch for %s", repo.path)
-        _notify_conflict(webhook, repo, "Could not determine current branch")
+        _notify_failure(webhook, repo, "Could not determine current branch", title="Sync skipped")
         return SyncResult.ERROR
     if current_branch != repo.branch:
         logger.info(
@@ -185,7 +185,7 @@ def sync_repo(
 
     # 0.5. Pre-sync hook (runs before fetch so generated files can be auto-committed)
     if not _run_hook(repo, "pre", dry_run=dry_run):
-        _notify_conflict(webhook, repo, "pre-sync hook failed", title="Pre-sync hook failed")
+        _notify_failure(webhook, repo, "pre-sync hook failed", title="Pre-sync hook failed")
         return SyncResult.ERROR
 
     result = _sync_git(repo, webhook, dry_run=dry_run)
@@ -193,7 +193,7 @@ def sync_repo(
     # 5. Post-sync hook (only on success paths; skip on CONFLICT/ERROR)
     if result in _POST_HOOK_RESULTS:
         if not _run_hook(repo, "post", dry_run=dry_run):
-            _notify_conflict(webhook, repo, "post-sync hook failed", title="Post-sync hook failed")
+            _notify_failure(webhook, repo, "post-sync hook failed", title="Post-sync hook failed")
             return SyncResult.ERROR
 
     return result
@@ -210,7 +210,9 @@ def _sync_git(
     fetch_result = fetch(repo.path, repo.remote)
     if not fetch_result.ok:
         logger.error("Fetch failed for %s: %s", repo.path, fetch_result.stderr)
-        _notify_conflict(webhook, repo, f"git fetch failed: {fetch_result.stderr}")
+        _notify_failure(
+            webhook, repo, f"git fetch failed: {fetch_result.stderr}", title="Fetch failed"
+        )
         return SyncResult.ERROR
 
     # 2. Commit uncommitted changes if applicable
@@ -222,7 +224,7 @@ def _sync_git(
                 commit_result = commit_all(repo.path, msg)
                 if not commit_result.ok:
                     logger.error("Auto-commit failed for %s: %s", repo.path, commit_result.stderr)
-                    _notify_conflict(
+                    _notify_failure(
                         webhook,
                         repo,
                         f"auto-commit failed: {commit_result.stderr}",
@@ -257,14 +259,16 @@ def _sync_pull(
         if not dry_run:
             result = pull_ff(repo.path)
             if not result.ok:
-                _notify_conflict(webhook, repo, f"pull --ff-only failed: {result.stderr}")
+                _notify_failure(
+                    webhook, repo, f"pull --ff-only failed: {result.stderr}", title="Pull failed"
+                )
                 return SyncResult.CONFLICT
         return SyncResult.PULLED
 
     reason = (
         "Local has unpushed commits" if status == RepoStatus.AHEAD else "Branches have diverged"
     )
-    _notify_conflict(webhook, repo, reason)
+    _notify_failure(webhook, repo, reason, title="Sync blocked")
     return SyncResult.CONFLICT
 
 
@@ -279,12 +283,14 @@ def _sync_push(
         if not dry_run:
             result = push(repo.path, repo.remote, repo.branch)
             if not result.ok:
-                _notify_conflict(webhook, repo, f"git push failed: {result.stderr}")
+                _notify_failure(
+                    webhook, repo, f"git push failed: {result.stderr}", title="Push failed"
+                )
                 return SyncResult.CONFLICT
         return SyncResult.PUSHED
 
     reason = "Remote has new commits" if status == RepoStatus.BEHIND else "Branches have diverged"
-    _notify_conflict(webhook, repo, reason)
+    _notify_failure(webhook, repo, reason, title="Sync blocked")
     return SyncResult.CONFLICT
 
 
@@ -299,7 +305,9 @@ def _sync_both(
         if not dry_run:
             result = pull_ff(repo.path)
             if not result.ok:
-                _notify_conflict(webhook, repo, f"pull --ff-only failed: {result.stderr}")
+                _notify_failure(
+                    webhook, repo, f"pull --ff-only failed: {result.stderr}", title="Pull failed"
+                )
                 return SyncResult.CONFLICT
         return SyncResult.PULLED
 
@@ -307,7 +315,9 @@ def _sync_both(
         if not dry_run:
             result = push(repo.path, repo.remote, repo.branch)
             if not result.ok:
-                _notify_conflict(webhook, repo, f"git push failed: {result.stderr}")
+                _notify_failure(
+                    webhook, repo, f"git push failed: {result.stderr}", title="Push failed"
+                )
                 return SyncResult.CONFLICT
         return SyncResult.PUSHED
 
@@ -321,16 +331,22 @@ def _sync_both(
         push_result = push(repo.path, repo.remote, repo.branch)
         if push_result.ok:
             return SyncResult.REBASED_AND_PUSHED
-        _notify_conflict(webhook, repo, f"Push after rebase failed: {push_result.stderr}")
+        _notify_failure(
+            webhook,
+            repo,
+            f"Push after rebase failed: {push_result.stderr}",
+            title="Push failed",
+        )
         return SyncResult.CONFLICT
 
     # Rebase failed — abort and notify
     logger.warning("Rebase failed for %s, aborting", repo.path)
     rebase_abort(repo.path)
-    _notify_conflict(
+    _notify_failure(
         webhook,
         repo,
         f"Rebase conflict — manual resolution required:\n```\n{rebase_result.stderr}\n```",
+        title="Rebase conflict detected",
     )
     return SyncResult.CONFLICT
 
