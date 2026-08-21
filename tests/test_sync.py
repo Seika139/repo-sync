@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from discord_notify import DiscordWebhook, Embed
 
 from repo_sync.config import Direction, RepoConfig
 from repo_sync.sync import SyncResult, sync_repo
@@ -43,6 +44,24 @@ def _make_other_clone(bare: Path) -> Path:
 
 def _make_repo_config(path: Path, direction: Direction) -> RepoConfig:
     return RepoConfig(path=path, direction=direction, branch="main")
+
+
+class FakeWebhook(DiscordWebhook):
+    """Records embeds sent via `_send_webhook` without hitting the network."""
+
+    def __init__(self) -> None:
+        super().__init__("https://example.com/webhook")
+        self.sent_embeds: list[Embed] = []
+
+    def send(
+        self,
+        content: str = "",
+        embeds: list[Embed] | None = None,
+        *,
+        dry_run: bool = False,
+    ) -> list[int]:
+        self.sent_embeds.extend(embeds or [])
+        return []
 
 
 class TestSyncPull:
@@ -310,6 +329,104 @@ class TestHooks:
 
         repo = _make_repo_config(local, Direction.BOTH)
         assert sync_repo(repo, webhook=None) == SyncResult.ERROR
+
+
+class TestNotificationTitles:
+    """Failure notifications must carry titles that reflect the actual failure,
+    not a generic "conflict" label (see issue #38)."""
+
+    def test_fetch_failure_notifies_with_fetch_failed_title(
+        self, git_pair: tuple[Path, Path]
+    ) -> None:
+        local, _ = git_pair
+        # An unconfigured remote name makes `git fetch` fail immediately, without
+        # any real network activity, and it is not a conflict of any kind.
+        repo = RepoConfig(
+            path=local, direction=Direction.PULL, branch="main", remote="no-such-remote"
+        )
+
+        webhook = FakeWebhook()
+        assert sync_repo(repo, webhook=webhook) == SyncResult.ERROR
+
+        assert len(webhook.sent_embeds) == 1
+        assert webhook.sent_embeds[0].title == "Fetch failed"
+
+    def test_rebase_conflict_notifies_with_conflict_title(
+        self, git_pair: tuple[Path, Path]
+    ) -> None:
+        local, bare = git_pair
+        # Remote modifies README
+        other = _make_other_clone(bare)
+        (other / "README.md").write_text("remote version")
+        _run_git("add", ".", cwd=other)
+        _run_git("commit", "-m", "remote", cwd=other)
+        _run_git("push", "origin", "main", cwd=other)
+
+        # Local also modifies README (real rebase conflict!)
+        (local / "README.md").write_text("local version")
+        _run_git("add", ".", cwd=local)
+        _run_git("commit", "-m", "local", cwd=local)
+
+        repo = _make_repo_config(local, Direction.BOTH)
+        webhook = FakeWebhook()
+        assert sync_repo(repo, webhook=webhook) == SyncResult.CONFLICT
+
+        assert len(webhook.sent_embeds) == 1
+        assert "conflict" in webhook.sent_embeds[0].title.lower()
+
+    def test_rebase_non_conflict_failure_notifies_with_rebase_failed_title(
+        self, git_pair: tuple[Path, Path]
+    ) -> None:
+        local, bare = git_pair
+        # Remote modifies README (diverges history so a rebase is attempted)
+        other = _make_other_clone(bare)
+        (other / "README.md").write_text("remote version")
+        _run_git("add", ".", cwd=other)
+        _run_git("commit", "-m", "remote", cwd=other)
+        _run_git("push", "origin", "main", cwd=other)
+
+        # Local commits a change to a different file so histories diverge
+        # without a real content conflict on rebase.
+        (local / "local.txt").write_text("data")
+        _run_git("add", ".", cwd=local)
+        _run_git("commit", "-m", "local", cwd=local)
+
+        # Local also has unstaged changes, which blocks `git rebase` outright
+        # with "cannot rebase: You have unstaged changes" — not a conflict.
+        (local / "local.txt").write_text("dirty")
+
+        repo = RepoConfig(path=local, direction=Direction.BOTH, branch="main", auto_commit=False)
+        webhook = FakeWebhook()
+        assert sync_repo(repo, webhook=webhook) == SyncResult.CONFLICT
+
+        assert len(webhook.sent_embeds) == 1
+        title = webhook.sent_embeds[0].title
+        assert title == "Rebase failed"
+        assert "conflict" not in title.lower()
+
+
+class TestIsRebaseConflict:
+    def test_unrelated_stderr_mentioning_conflict_is_not_a_conflict(self) -> None:
+        from repo_sync.git_ops import GitResult
+        from repo_sync.sync import _is_rebase_conflict
+
+        result = GitResult(
+            returncode=128,
+            stdout="",
+            stderr="fatal: invalid upstream 'conflict/main'",
+        )
+        assert _is_rebase_conflict(result) is False
+
+    def test_real_conflict_diagnostic_is_a_conflict(self) -> None:
+        from repo_sync.git_ops import GitResult
+        from repo_sync.sync import _is_rebase_conflict
+
+        result = GitResult(
+            returncode=1,
+            stdout="CONFLICT (content): Merge conflict in README.md",
+            stderr="",
+        )
+        assert _is_rebase_conflict(result) is True
 
 
 class TestTrimHookOutput:
