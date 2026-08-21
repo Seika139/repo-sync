@@ -16,6 +16,21 @@
 
 ## [Unreleased]
 
+### Added
+
+- README に SSH 接続多重化 (`ControlMaster`) のセットアップ手順を追記する。多数リポジトリの一括同期で GitHub の SSH レート制限に断続的に当たる問題の回避策として、複数アカウント利用時の `ControlPath` の設計 (`%n` トークン) も含めて解説する ([#24](https://github.com/Seika139/repo-sync/pull/24))。
+
+### Changed
+
+- 失敗時の Discord 通知タイトルを失敗内容ごとに分離する (`Fetch failed` / `Pull failed` / `Push failed` / `Sync blocked` / `Sync skipped` / `Rebase failed`)。従来はネットワークエラーを含むほぼ全ての失敗が `Sync conflict detected` と通知され、実際のコンフリクトと区別できなかった。`Rebase conflict detected` は git の conflict 診断メッセージを確認できた場合のみ使用する ([#40](https://github.com/Seika139/repo-sync/pull/40))。
+- `discord-notify` の依存を v0.3.0 に更新する ([#29](https://github.com/Seika139/repo-sync/pull/29))。
+- Dependabot による `uv` 依存の定期更新を取り込む。
+
+### Fixed
+
+- GitHub の SSH エッジ切断による fetch 失敗 (`Connection closed by ...` / `Broken pipe` / `expected flush after ref listing`) が自動リトライされず即エラー扱いになる問題を修正する ([#39](https://github.com/Seika139/repo-sync/pull/39))。
+- 非冪等な `git rebase` を一過性エラーのリトライ対象から除外する。rebase 途中の失敗 (GPG 署名エラー等) 後に再実行すると、進行中の rebase state と衝突して本来のエラーメッセージが隠れていた ([#39](https://github.com/Seika139/repo-sync/pull/39))。
+
 ## [0.2.0] - 2026-05-12
 
 ### Added
