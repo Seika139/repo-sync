@@ -4,7 +4,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from discord_notify import Embed
+from discord_notify import DiscordWebhook, Embed
 
 from repo_sync.config import Direction, RepoConfig
 from repo_sync.sync import SyncResult, sync_repo
@@ -46,13 +46,20 @@ def _make_repo_config(path: Path, direction: Direction) -> RepoConfig:
     return RepoConfig(path=path, direction=direction, branch="main")
 
 
-class FakeWebhook:
+class FakeWebhook(DiscordWebhook):
     """Records embeds sent via `_send_webhook` without hitting the network."""
 
     def __init__(self) -> None:
+        super().__init__("https://example.com/webhook")
         self.sent_embeds: list[Embed] = []
 
-    def send(self, content: str = "", embeds: list[Embed] | None = None, **_: object) -> list[int]:
+    def send(
+        self,
+        content: str = "",
+        embeds: list[Embed] | None = None,
+        *,
+        dry_run: bool = False,
+    ) -> list[int]:
         self.sent_embeds.extend(embeds or [])
         return []
 
