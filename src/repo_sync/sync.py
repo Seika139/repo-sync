@@ -15,6 +15,7 @@ from discord_notify.webhook import COLOR_ERROR, COLOR_SUCCESS, COLOR_WARNING
 
 from repo_sync.config import Config, Direction, RepoConfig
 from repo_sync.git_ops import (
+    GitResult,
     RepoStatus,
     commit_all,
     fetch,
@@ -294,6 +295,24 @@ def _sync_push(
     return SyncResult.CONFLICT
 
 
+_REBASE_CONFLICT_MARKERS = (
+    "conflict",
+    "could not apply",
+    "needs merge",
+)
+
+
+def _is_rebase_conflict(result: GitResult) -> bool:
+    """Best-effort detection of whether a failed rebase was due to a merge conflict.
+
+    Rebase can fail for other reasons too (e.g. unstaged changes blocking the
+    rebase), which should not be reported as a conflict requiring manual
+    resolution.
+    """
+    combined = f"{result.stdout}\n{result.stderr}".lower()
+    return any(marker in combined for marker in _REBASE_CONFLICT_MARKERS)
+
+
 def _sync_both(
     repo: RepoConfig,
     status: RepoStatus,
@@ -342,12 +361,20 @@ def _sync_both(
     # Rebase failed — abort and notify
     logger.warning("Rebase failed for %s, aborting", repo.path)
     rebase_abort(repo.path)
-    _notify_failure(
-        webhook,
-        repo,
-        f"Rebase conflict — manual resolution required:\n```\n{rebase_result.stderr}\n```",
-        title="Rebase conflict detected",
-    )
+    if _is_rebase_conflict(rebase_result):
+        _notify_failure(
+            webhook,
+            repo,
+            f"Rebase conflict — manual resolution required:\n```\n{rebase_result.stderr}\n```",
+            title="Rebase conflict detected",
+        )
+    else:
+        _notify_failure(
+            webhook,
+            repo,
+            f"Rebase failed: {rebase_result.stderr}",
+            title="Rebase failed",
+        )
     return SyncResult.CONFLICT
 
 

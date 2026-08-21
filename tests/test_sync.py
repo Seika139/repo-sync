@@ -367,6 +367,36 @@ class TestNotificationTitles:
         assert len(webhook.sent_embeds) == 1
         assert "conflict" in webhook.sent_embeds[0].title.lower()
 
+    def test_rebase_non_conflict_failure_notifies_with_rebase_failed_title(
+        self, git_pair: tuple[Path, Path]
+    ) -> None:
+        local, bare = git_pair
+        # Remote modifies README (diverges history so a rebase is attempted)
+        other = _make_other_clone(bare)
+        (other / "README.md").write_text("remote version")
+        _run_git("add", ".", cwd=other)
+        _run_git("commit", "-m", "remote", cwd=other)
+        _run_git("push", "origin", "main", cwd=other)
+
+        # Local commits a change to a different file so histories diverge
+        # without a real content conflict on rebase.
+        (local / "local.txt").write_text("data")
+        _run_git("add", ".", cwd=local)
+        _run_git("commit", "-m", "local", cwd=local)
+
+        # Local also has unstaged changes, which blocks `git rebase` outright
+        # with "cannot rebase: You have unstaged changes" — not a conflict.
+        (local / "local.txt").write_text("dirty")
+
+        repo = RepoConfig(path=local, direction=Direction.BOTH, branch="main", auto_commit=False)
+        webhook = FakeWebhook()
+        assert sync_repo(repo, webhook=webhook) == SyncResult.CONFLICT
+
+        assert len(webhook.sent_embeds) == 1
+        title = webhook.sent_embeds[0].title
+        assert title == "Rebase failed"
+        assert "conflict" not in title.lower()
+
 
 class TestTrimHookOutput:
     def test_short_unchanged(self) -> None:
