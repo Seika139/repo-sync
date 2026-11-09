@@ -47,9 +47,9 @@ strict = true
 
 [dependency-groups]
 dev = [
-  "mypy>=2.4.0",
-  "pytest>=9.1.1",
-  "ruff>=0.17.2",
-  "ty>=0.0.91",
-  "types-pyyaml>=6.0.12.20260906",
+  "mypy>=2.4.1",
+  "pytest>=9.2.0",
+  "ruff>=0.17.3",
+  "ty>=0.0.95",
+  "types-pyyaml>=6.0.12.20261030",
 ]
